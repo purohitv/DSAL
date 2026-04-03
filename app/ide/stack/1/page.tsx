@@ -1,0 +1,545 @@
+'use client';
+
+import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Play, Square, ArrowRight, Terminal, Code, Layers, Database, Plus, Minus, Eye } from 'lucide-react';
+import Editor from '@monaco-editor/react';
+import IDELayout from '@/components/ide/Layout';
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+
+const MAX_STACK_SIZE = 6;
+
+const CODE_SNIPPET = `#include <iostream>
+using namespace std;
+
+#define MAX 6
+int stack[MAX];
+int top = -1;
+
+void push(int val) {
+    if (top >= MAX - 1) {
+        cout << "Stack Overflow\\n";
+        return;
+    }
+    stack[++top] = val;
+    cout << "Pushed " << val << "\\n";
+}
+
+int pop() {
+    if (top < 0) {
+        cout << "Stack Underflow\\n";
+        return -1;
+    }
+    int val = stack[top--];
+    cout << "Popped " << val << "\\n";
+    return val;
+}
+
+int peek() {
+    if (top < 0) {
+        cout << "Stack is Empty\\n";
+        return -1;
+    }
+    return stack[top];
+}
+`;
+
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+export default function StackVisualization() {
+    const [stack, setStack] = useState<(number | null)[]>(Array(MAX_STACK_SIZE).fill(null));
+    const [top, setTop] = useState(-1);
+    const [inputValue, setInputValue] = useState("");
+    const [activeLine, setActiveLine] = useState<number | null>(null);
+    const [terminal, setTerminal] = useState<{ text: string, type: 'info' | 'error' | 'success' }[]>([]);
+    const [callStack, setCallStack] = useState<any[]>([]);
+    const [variables, setVariables] = useState<any[]>([]);
+    const [isAnimating, setIsAnimating] = useState(false);
+
+    const editorRef = useRef<any>(null);
+    const monacoRef = useRef<any>(null);
+    const decorationsRef = useRef<any[]>([]);
+    const terminalEndRef = useRef<HTMLDivElement>(null);
+
+    // Auto-scroll terminal
+    useEffect(() => {
+        terminalEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [terminal]);
+
+    // Highlight active line in Monaco
+    useEffect(() => {
+        if (editorRef.current && monacoRef.current) {
+            const editor = editorRef.current;
+            const monaco = monacoRef.current;
+            if (activeLine !== null) {
+                decorationsRef.current = editor.deltaDecorations(decorationsRef.current || [], [
+                    {
+                        range: new monaco.Range(activeLine, 1, activeLine, 1),
+                        options: {
+                            isWholeLine: true,
+                            className: 'bg-blue-500/30',
+                        }
+                    }
+                ]);
+                editor.revealLineInCenter(activeLine);
+            } else {
+                decorationsRef.current = editor.deltaDecorations(decorationsRef.current || [], []);
+            }
+        }
+    }, [activeLine]);
+
+    const handlePush = async () => {
+        if (!inputValue || isAnimating) return;
+        const val = parseInt(inputValue);
+        setIsAnimating(true);
+        setInputValue("");
+
+        setActiveLine(8);
+        setCallStack([{ id: 'push', name: `push(${val})`, line: 8 }]);
+        setVariables([{ name: 'val', value: val, type: 'int' }, { name: 'top', value: top, type: 'int' }]);
+        await sleep(600);
+
+        setActiveLine(9);
+        await sleep(600);
+
+        if (top >= MAX_STACK_SIZE - 1) {
+            setActiveLine(10);
+            setTerminal(prev => [...prev, { text: "Stack Overflow", type: "error" }]);
+            await sleep(600);
+            setActiveLine(11);
+            await sleep(600);
+        } else {
+            setActiveLine(13);
+            const newTop = top + 1;
+            setTop(newTop);
+            setVariables([{ name: 'val', value: val, type: 'int' }, { name: 'top', value: newTop, type: 'int' }]);
+            
+            setStack(prev => {
+                const next = [...prev];
+                next[newTop] = val;
+                return next;
+            });
+            await sleep(600);
+
+            setActiveLine(14);
+            setTerminal(prev => [...prev, { text: `Pushed ${val}`, type: "success" }]);
+            await sleep(600);
+        }
+
+        setActiveLine(null);
+        setCallStack([]);
+        setVariables([]);
+        setIsAnimating(false);
+    };
+
+    const handlePop = async () => {
+        if (isAnimating) return;
+        setIsAnimating(true);
+
+        setActiveLine(17);
+        setCallStack([{ id: 'pop', name: `pop()`, line: 17 }]);
+        setVariables([{ name: 'top', value: top, type: 'int' }]);
+        await sleep(600);
+
+        setActiveLine(18);
+        await sleep(600);
+
+        if (top < 0) {
+            setActiveLine(19);
+            setTerminal(prev => [...prev, { text: "Stack Underflow", type: "error" }]);
+            await sleep(600);
+            setActiveLine(20);
+            await sleep(600);
+        } else {
+            setActiveLine(22);
+            const val = stack[top];
+            setVariables([{ name: 'val', value: val, type: 'int' }, { name: 'top', value: top, type: 'int' }]);
+            
+            const newTop = top - 1;
+            setTop(newTop);
+            setVariables([{ name: 'val', value: val, type: 'int' }, { name: 'top', value: newTop, type: 'int' }]);
+            setStack(prev => {
+                const next = [...prev];
+                next[top] = null;
+                return next;
+            });
+            await sleep(600);
+
+            setActiveLine(23);
+            setTerminal(prev => [...prev, { text: `Popped ${val}`, type: "success" }]);
+            await sleep(600);
+
+            setActiveLine(24);
+            await sleep(600);
+        }
+
+        setActiveLine(null);
+        setCallStack([]);
+        setVariables([]);
+        setIsAnimating(false);
+    };
+
+    const handlePeek = async () => {
+        if (isAnimating) return;
+        setIsAnimating(true);
+
+        setActiveLine(27);
+        setCallStack([{ id: 'peek', name: `peek()`, line: 27 }]);
+        setVariables([{ name: 'top', value: top, type: 'int' }]);
+        await sleep(600);
+
+        setActiveLine(28);
+        await sleep(600);
+
+        if (top < 0) {
+            setActiveLine(29);
+            setTerminal(prev => [...prev, { text: "Stack is Empty", type: "error" }]);
+            await sleep(600);
+            setActiveLine(30);
+            await sleep(600);
+        } else {
+            setActiveLine(32);
+            setTerminal(prev => [...prev, { text: `Peeked ${stack[top]}`, type: "info" }]);
+            await sleep(600);
+        }
+
+        setActiveLine(null);
+        setCallStack([]);
+        setVariables([]);
+        setIsAnimating(false);
+    };
+
+    const handleReset = () => {
+        if (isAnimating) return;
+        setStack(Array(MAX_STACK_SIZE).fill(null));
+        setTop(-1);
+        setTerminal([]);
+        setActiveLine(null);
+        setCallStack([]);
+        setVariables([]);
+        setInputValue("");
+    };
+
+    const stackControls = (
+        <div className="flex items-center gap-3">
+            <div className="flex items-center bg-neutral-900 border border-neutral-800 rounded-md overflow-hidden">
+                <input
+                    type="number"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    placeholder="Value"
+                    className="w-24 bg-transparent text-xs text-white px-3 py-1.5 outline-none"
+                    onKeyDown={(e) => e.key === 'Enter' && handlePush()}
+                    disabled={isAnimating}
+                />
+                <button
+                    onClick={handlePush}
+                    disabled={isAnimating || !inputValue}
+                    className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:hover:bg-blue-600 text-white text-xs font-bold transition-colors border-l border-neutral-800"
+                >
+                    <Plus size={14} /> Push
+                </button>
+            </div>
+            <button
+                onClick={handlePop}
+                disabled={isAnimating}
+                className="flex items-center gap-2 px-4 py-1.5 bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50 text-white text-xs font-bold rounded-md border border-neutral-700 transition-colors"
+            >
+                <Minus size={14} /> Pop
+            </button>
+            <button
+                onClick={handlePeek}
+                disabled={isAnimating}
+                className="flex items-center gap-2 px-4 py-1.5 bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50 text-white text-xs font-bold rounded-md border border-neutral-700 transition-colors"
+            >
+                <Eye size={14} /> Peek
+            </button>
+            <div className="w-px h-6 bg-neutral-800 mx-2"></div>
+            <button
+                onClick={handleReset}
+                disabled={isAnimating}
+                className="flex items-center gap-2 px-4 py-1.5 bg-red-900/30 hover:bg-red-900/50 text-red-400 disabled:opacity-50 text-xs font-bold rounded-md border border-red-900/50 transition-colors"
+            >
+                <Square size={14} /> Reset
+            </button>
+        </div>
+    );
+
+    const codePanel = (
+        <div className="flex-1 overflow-hidden bg-[#0d1117] h-full">
+            <style>{`
+                .bg-blue-500\\/30 {
+                    background-color: rgba(59, 130, 246, 0.3) !important;
+                }
+            `}</style>
+            <Editor
+                height="100%"
+                defaultLanguage="cpp"
+                theme="vs-dark"
+                value={CODE_SNIPPET}
+                options={{
+                    minimap: { enabled: false },
+                    fontSize: 10,
+                    readOnly: true,
+                    scrollBeyondLastLine: false,
+                    glyphMargin: false,
+                    folding: false,
+                    lineDecorationsWidth: 0,
+                    lineNumbersMinChars: 3,
+                    padding: { top: 8, bottom: 8 },
+                    renderLineHighlight: 'none',
+                }}
+                onMount={(editor, monaco) => {
+                    editorRef.current = editor;
+                    monacoRef.current = monaco;
+                }}
+            />
+        </div>
+    );
+
+    const visualizationPanel = (
+        <div className="flex flex-col h-full">
+            {/* Main Visualization Area */}
+            <div className="flex-1 flex items-center justify-center relative overflow-hidden bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-900 via-[#101622] to-[#0a0d14] h-full">
+                <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "linear-gradient(#3b4354 1px, transparent 1px), linear-gradient(90deg, #3b4354 1px, transparent 1px)", backgroundSize: "40px 40px" }}></div>
+                <div className="absolute top-6 left-6 flex items-center gap-3 text-sm text-gray-400 font-mono z-10">
+                    <Database size={18} />
+                    <span>Memory [MAX = {MAX_STACK_SIZE}]</span>
+                </div>
+
+                <TransformWrapper
+                    initialScale={1}
+                    minScale={0.2}
+                    maxScale={4}
+                    centerOnInit
+                    wheel={{ step: 0.1 }}
+                >
+                    <TransformComponent wrapperStyle={{ width: "100%", height: "100%" }} contentStyle={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <div className="flex items-end gap-8 relative z-10">
+                            <div className="flex relative pr-12">
+                                <div className="flex flex-col-reverse justify-start mr-2 gap-1 pb-1">
+                                    {Array.from({ length: MAX_STACK_SIZE }).map((_, i) => (
+                                        <div key={i} className={`h-8 flex items-center justify-end text-[9px] font-mono ${i === top ? 'text-white font-bold' : 'text-gray-500'}`}>{i}</div>
+                                    ))}
+                                </div>
+                                <div className="flex flex-col-reverse gap-1 bg-[#282e39] p-1.5 rounded-lg border border-[#3b4354] shadow-2xl">
+                                    {Array.from({ length: MAX_STACK_SIZE }).map((_, i) => {
+                                        const isActive = i <= top;
+                                        const isTop = i === top;
+                                        return (
+                                            <motion.div 
+                                                key={i}
+                                                layout
+                                                className={`w-16 h-8 border rounded flex items-center justify-center font-mono text-xs shadow-sm transition-colors duration-300 ${
+                                                    isActive 
+                                                        ? isTop 
+                                                            ? 'bg-primary text-white border-white/20 font-bold shadow-[0_0_10px_rgba(127,19,236,0.5)] transform scale-105 z-10' 
+                                                            : 'bg-[#1c212c] text-white border-[#3b4354]'
+                                                        : 'border-2 border-dashed border-gray-700/50 text-gray-700/50 text-[9px]'
+                                                }`}
+                                            >
+                                                <AnimatePresence mode="wait">
+                                                    {stack[i] !== null ? (
+                                                        <motion.span
+                                                            key={stack[i]}
+                                                            initial={{ opacity: 0, y: 10 }}
+                                                            animate={{ opacity: 1, y: 0 }}
+                                                            exit={{ opacity: 0, y: -10 }}
+                                                            transition={{ duration: 0.2 }}
+                                                        >
+                                                            {stack[i]}
+                                                        </motion.span>
+                                                    ) : (
+                                                        <span>null</span>
+                                                    )}
+                                                </AnimatePresence>
+                                            </motion.div>
+                                        );
+                                    })}
+                                </div>
+                                <div className="absolute right-0 bottom-0 h-full w-8 pointer-events-none">
+                                    {top >= 0 && (
+                                        <motion.div 
+                                            layoutId="topPointer"
+                                            className="absolute -right-2 flex items-center transition-all duration-300 animate-pulse"
+                                            style={{ bottom: `${(top * 36) + 6}px` }}
+                                        >
+                                            <span className="material-symbols-outlined text-primary rotate-180" style={{ fontSize: "16px" }}>arrow_right_alt</span>
+                                            <span className="ml-1 bg-primary text-white text-[8px] font-bold px-1 py-0.5 rounded shadow-lg uppercase tracking-wider">Top</span>
+                                        </motion.div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </TransformComponent>
+                </TransformWrapper>
+            </div>
+        </div>
+    );
+
+    return (
+        <IDELayout
+            title="Stack (Array)"
+            category="Data Structures"
+            extraControls={stackControls}
+            leftPanel={{
+                title: "Source View",
+                subtitle: "stack.cpp",
+                icon: "code",
+                content: codePanel
+            }}
+            centerPanel={{
+                title: "Simulation Stage",
+                subtitle: "Memory Monitor",
+                icon: "science",
+                content: visualizationPanel
+            }}
+            bottomPanel={{
+                title: "Standard Output",
+                subtitle: "Live Stream",
+                icon: "terminal",
+                content: (
+                    <div className="flex-1 overflow-y-auto p-1.5 space-y-1 font-mono text-[9px] bg-[#0d1117] h-full flex flex-col">
+                        <div className="flex-1 overflow-y-auto">
+                            {terminal.length === 0 ? (
+                                <div className="text-gray-500 italic">No output yet...</div>
+                            ) : (
+                                terminal.map((log, i) => (
+                                    <motion.div 
+                                        key={i}
+                                        initial={{ opacity: 0, x: -5 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        className={`flex gap-1.5 ${
+                                            log.type === 'error' ? 'text-red-400' : 
+                                            log.type === 'success' ? 'text-green-400 opacity-60' : 'text-gray-300 opacity-60'
+                                        }`}
+                                    >
+                                        <span className={log.type === 'error' ? 'text-red-500' : log.type === 'success' ? 'text-green-500' : 'text-blue-500'}>
+                                            {log.type === 'error' ? '✖' : log.type === 'success' ? '✔' : '➜'}
+                                        </span>
+                                        <span>{log.text}</span>
+                                    </motion.div>
+                                ))
+                            )}
+                            <div ref={terminalEndRef} />
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-1 border-t border-[#3b4354] pt-1">
+                            <span className="text-blue-500 font-bold">➜</span>
+                            <input 
+                                type="text" 
+                                maxLength={30}
+                                className="flex-1 bg-[#1c212c] border border-[#3b4354] rounded px-1.5 py-0.5 outline-none text-white font-mono text-[9px] placeholder:text-gray-500 focus:bg-[#282e39] focus:border-primary/50 transition-colors"
+                                placeholder="Enter command (e.g., 'push 5', 'pop')..."
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        const input = e.currentTarget;
+                                        const val = input.value;
+                                        if (val) {
+                                            const parts = val.trim().split(/\s+/);
+                                            const cmd = parts[0].toLowerCase();
+                                            if (cmd === 'push' && parts[1]) {
+                                                setInputValue(parts[1]);
+                                                setTimeout(handlePush, 0);
+                                            } else if (cmd === 'pop') {
+                                                handlePop();
+                                            } else if (cmd === 'peek') {
+                                                handlePeek();
+                                            } else {
+                                                setTerminal(prev => [...prev, { text: `Command not found: ${cmd}`, type: 'error' }]);
+                                            }
+                                            input.value = '';
+                                        }
+                                    }
+                                }}
+                                disabled={isAnimating}
+                            />
+                        </div>
+                    </div>
+                )
+            }}
+            rightPanelTop={{
+                title: "Call Stack",
+                subtitle: "Memory Monitor",
+                icon: "layers",
+                content: (
+                    <div className="flex-1 overflow-y-auto p-1 space-y-0.5 bg-[#1c212c] h-full">
+                        <AnimatePresence>
+                            {callStack.length === 0 ? (
+                                <div className="text-[9px] text-gray-500 italic text-center mt-2">Stack is empty</div>
+                            ) : (
+                                callStack.map((frame, i) => (
+                                    <motion.div
+                                        key={frame.id}
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
+                                        className={`group flex items-center justify-between p-1.5 rounded transition-colors ${
+                                            i === 0 
+                                            ? 'bg-[#282e39] border-l-2 border-primary rounded-r shadow-sm cursor-pointer hover:bg-[#323945]' 
+                                            : 'border border-transparent hover:bg-[#282e39]/50 opacity-60'
+                                        }`}
+                                    >
+                                        <div className="flex flex-col">
+                                            <span className={`font-mono text-[10px] ${i === 0 ? 'text-white font-medium' : 'text-gray-300'}`}>{frame.name}</span>
+                                            <span className={`text-[9px] ${i === 0 ? 'text-[#9da6b9]' : 'text-gray-400'}`}>Line {frame.line}</span>
+                                        </div>
+                                        {i === 0 && <span className="material-symbols-outlined text-primary opacity-0 group-hover:opacity-100 text-[10px]">arrow_back</span>}
+                                    </motion.div>
+                                ))
+                            )}
+                        </AnimatePresence>
+                    </div>
+                )
+            }}
+            rightPanelBottom={{
+                title: "Variables",
+                subtitle: "Local Scope",
+                icon: "visibility",
+                content: (
+                    <div className="flex-1 overflow-y-auto bg-[#1c212c] h-full">
+                        {variables.length === 0 ? (
+                            <div className="text-[9px] text-gray-500 italic text-center mt-2">No active variables</div>
+                        ) : (
+                            <table className="w-full text-left border-collapse">
+                                <thead className="bg-[#282e39] text-[9px] uppercase text-[#b0b8c9] font-semibold sticky top-0">
+                                    <tr>
+                                        <th className="px-2 py-1">Name</th>
+                                        <th className="px-2 py-1">Value</th>
+                                        <th className="px-2 py-1">Type</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="text-[10px] font-mono divide-y divide-[#3b4354]">
+                                    <AnimatePresence>
+                                        {variables.map((v, i) => {
+                                            const hasChanged = true; 
+                                            return (
+                                            <motion.tr 
+                                                key={v.name}
+                                                initial={{ opacity: 0, x: -10 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                className={hasChanged ? 'bg-primary/10' : ''}
+                                            >
+                                                <td className="px-2 py-1 text-blue-300 font-medium">{v.name}</td>
+                                                <td className="px-2 py-1 text-white">
+                                                    <motion.span
+                                                        key={String(v.value)}
+                                                        initial={{ scale: 1.2, color: '#60a5fa' }}
+                                                        animate={{ scale: 1, color: '#ffffff' }}
+                                                        transition={{ duration: 0.5 }}
+                                                    >
+                                                        {v.value}
+                                                    </motion.span>
+                                                </td>
+                                                <td className="px-2 py-1 text-[#9da6b9]">{v.type}</td>
+                                            </motion.tr>
+                                        )})}
+                                    </AnimatePresence>
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
+                )
+            }}
+        />
+    );
+}

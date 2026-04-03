@@ -1,0 +1,5 @@
+{
+  "name": "DSAL - Data Structure and Algorithm Laboratory Visualizer",
+  "description": "A comprehensive learning and research environment for classical and quantum algorithms, featuring a 3-column IDE, real-time memory monitoring, time-travel debugging, and a dedicated Lecture Mode for presentations.",
+  "requestFramePermissions": []
+}

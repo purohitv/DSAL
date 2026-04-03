@@ -1,0 +1,44 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Lesson {
+  id                String   @id @default(cuid())
+  slug              String   @unique
+  type              String   // "classic" or "quantum"
+  title             String
+  category          String
+  description       String?
+  difficulty        String?  // "Beginner", "Intermediate", "Advanced"
+  initialCode       String
+  language          String   @default("cpp")
+  visualizationType String   // "tree", "stack", "linear", "quantum"
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  steps             Step[]
+}
+
+model Step {
+  id              String   @id @default(cuid())
+  lessonId        String
+  lesson          Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  order           Int      // Step number (1, 2, 3...)
+  description     String   // What's happening in this step
+  terminalMessage String?  // Message to show in the terminal
+  highlightLines  String   // JSON array of line numbers to highlight
+  visualState     String   // JSON string representing the visual state (nodes, edges, etc.)
+  callStack       String?  // JSON array of stack frames
+  variables       String?  // JSON object of variable states
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([lessonId, order])
+}
