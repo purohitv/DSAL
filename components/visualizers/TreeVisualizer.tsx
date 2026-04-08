@@ -11,37 +11,64 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
+import VisualizerContainer from './VisualizerContainer';
+
 interface TreeVisualizerProps {
   data: {
     nodes: any[];
     edges: any[];
     activeNodeId?: string | null;
     pathNodeIds?: string[];
+    showGrid?: boolean;
+    showLabels?: boolean;
+    title?: string;
+    subtitle?: string;
+    step?: number;
   };
 }
 
 export default function TreeVisualizer({ data }: TreeVisualizerProps) {
-  const { nodes: rawNodes, edges: rawEdges, activeNodeId, pathNodeIds = [] } = data;
+  const { nodes: rawNodes, edges: rawEdges, activeNodeId, pathNodeIds = [], showGrid = true, showLabels = true, title, subtitle, step } = data;
 
   // Transform raw nodes to React Flow nodes with our styling
-  const nodes: Node[] = rawNodes.map((node: any) => ({
-    id: node.id,
-    position: node.position || { x: 0, y: 0 },
-    data: { label: node.value?.toString() || node.label },
-    style: {
-      background: activeNodeId === node.id ? "#3b82f6" : pathNodeIds.includes(node.id) ? "#10b981" : "#1e293b",
-      color: "#fff",
-      border: activeNodeId === node.id ? "2px solid #60a5fa" : pathNodeIds.includes(node.id) ? "2px solid #34d399" : "2px solid #475569",
-      borderRadius: "50%",
-      width: 50,
-      height: 50,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontWeight: "bold",
-      boxShadow: activeNodeId === node.id ? "0 0 15px rgba(59, 130, 246, 0.5)" : "none",
-    },
-  }));
+  const nodes: Node[] = rawNodes.map((node: any) => {
+    // Determine base colors based on state or custom color
+    let bg = "#1e293b";
+    let border = "2px solid #475569";
+    
+    if (activeNodeId === node.id) {
+      bg = "#3b82f6";
+      border = "2px solid #60a5fa";
+    } else if (pathNodeIds.includes(node.id)) {
+      bg = "#10b981";
+      border = "2px solid #34d399";
+    } else if (node.color) {
+      // Support custom colors (e.g., for Red-Black Trees)
+      bg = node.color === 'red' || node.color === 'RED' ? '#ef4444' : 
+           node.color === 'black' || node.color === 'BLACK' ? '#111827' : node.color;
+      border = `2px solid ${node.color === 'red' || node.color === 'RED' ? '#f87171' : '#374151'}`;
+    }
+
+    return {
+      id: node.id,
+      position: node.position || { x: 0, y: 0 },
+      data: { label: showLabels ? (node.value?.toString() || node.label) : "" },
+      style: {
+        background: bg,
+        color: "#fff",
+        border: border,
+        borderRadius: "50%",
+        width: 50,
+        height: 50,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontWeight: "bold",
+        boxShadow: activeNodeId === node.id ? "0 0 15px rgba(59, 130, 246, 0.5)" : "none",
+        ...node.style // Allow overriding with custom styles
+      },
+    };
+  });
 
   const edges: Edge[] = rawEdges.map((edge: any) => ({
     id: edge.id,
@@ -59,8 +86,7 @@ export default function TreeVisualizer({ data }: TreeVisualizerProps) {
   }));
 
   return (
-    <div className="flex-1 relative overflow-hidden bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-900 via-[#101622] to-[#0a0d14] h-full">
-      <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "linear-gradient(#3b4354 1px, transparent 1px), linear-gradient(90deg, #3b4354 1px, transparent 1px)", backgroundSize: "40px 40px" }}></div>
+    <VisualizerContainer title={title} subtitle={subtitle} showGrid={showGrid} step={step} disableZoom={true}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -69,6 +95,6 @@ export default function TreeVisualizer({ data }: TreeVisualizerProps) {
       >
         <Controls className="bg-[#1c212c] border border-[#3b4354] fill-white rounded overflow-hidden shadow-lg" />
       </ReactFlow>
-    </div>
+    </VisualizerContainer>
   );
 }

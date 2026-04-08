@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import { GoogleGenAI, Type } from '@google/genai';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -43,27 +44,72 @@ export default function ComplexityAnalysisDashboard() {
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
+    if (!code.trim()) return;
     setIsAnalyzing(true);
-    // Mock analysis delay
-    setTimeout(() => {
-      setResults({
-        timeComplexity: 'O(n²)',
-        spaceComplexity: 'O(1)',
-        cyclomaticComplexity: 4,
-        halstead: {
-          difficulty: 12.5,
-          effort: 1500,
-          bugs: 0.05
-        },
-        bottlenecks: [
-          { line: 4, issue: 'Nested loop causes quadratic time complexity.' },
-          { line: 5, issue: 'Frequent array access and swapping.' }
-        ]
+    setError(null);
+    
+    try {
+      const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new Error("Gemini API key is missing.");
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
+      
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: `Analyze the following code and determine its time complexity, space complexity, cyclomatic complexity, halstead metrics, and bottlenecks.
+Code:
+${code}`,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              timeComplexity: { type: Type.STRING, description: "e.g., O(n²)" },
+              timeExplanation: { type: Type.STRING, description: "Explanation of the time complexity" },
+              spaceComplexity: { type: Type.STRING, description: "e.g., O(1)" },
+              spaceExplanation: { type: Type.STRING, description: "Explanation of the space complexity" },
+              cyclomaticComplexity: { type: Type.NUMBER, description: "Estimated cyclomatic complexity" },
+              halstead: {
+                type: Type.OBJECT,
+                properties: {
+                  difficulty: { type: Type.NUMBER },
+                  effort: { type: Type.NUMBER },
+                  bugs: { type: Type.NUMBER }
+                }
+              },
+              bottlenecks: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    line: { type: Type.NUMBER, description: "Line number of the bottleneck" },
+                    issue: { type: Type.STRING, description: "Description of the issue" }
+                  }
+                }
+              }
+            },
+            required: ["timeComplexity", "timeExplanation", "spaceComplexity", "spaceExplanation", "cyclomaticComplexity", "halstead", "bottlenecks"]
+          }
+        }
       });
+
+      if (response.text) {
+        const parsedResult = JSON.parse(response.text);
+        setResults(parsedResult);
+      } else {
+        throw new Error("Failed to generate analysis.");
+      }
+    } catch (err: any) {
+      console.error("Analysis error:", err);
+      setError(err.message || "An error occurred during analysis.");
+    } finally {
       setIsAnalyzing(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -148,7 +194,21 @@ export default function ComplexityAnalysisDashboard() {
         {/* Right: Analysis Results */}
         <div className="w-1/2 flex flex-col bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-surface-dark to-background-dark overflow-y-auto scrollbar-hide">
           <AnimatePresence mode="wait">
-            {results ? (
+            {error ? (
+              <motion.div 
+                key="error"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex-1 flex items-center justify-center p-12"
+              >
+                <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-8 text-center">
+                  <span className="material-symbols-outlined text-red-500 text-5xl mb-4">error</span>
+                  <h3 className="text-red-400 font-bold text-xl mb-2">Analysis Failed</h3>
+                  <p className="text-red-400/70">{error}</p>
+                </div>
+              </motion.div>
+            ) : results ? (
               <motion.div 
                 key="results"
                 variants={containerVariants}
@@ -171,7 +231,7 @@ export default function ComplexityAnalysisDashboard() {
                       <span className="px-6 py-3 bg-primary/10 text-primary text-sm font-black uppercase tracking-widest rounded-lg border border-primary/20 shadow-lg">Runtime Audit</span>
                     </div>
                     <div className="text-[10rem] font-black text-primary font-mono tracking-tighter italic drop-shadow-[0_10px_20px_rgba(127,19,236,0.3)]">{results.timeComplexity}</div>
-                    <p className="text-2xl text-text-secondary mt-14 font-medium leading-relaxed opacity-80 italic">Quadratic time. Performance degrades significantly as input size grows. Optimization recommended.</p>
+                    <p className="text-2xl text-text-secondary mt-14 font-medium leading-relaxed opacity-80 italic">{results.timeExplanation}</p>
                   </motion.div>
                   
                   <motion.div 
@@ -187,7 +247,7 @@ export default function ComplexityAnalysisDashboard() {
                       <span className="px-6 py-3 bg-secondary/10 text-secondary text-sm font-black uppercase tracking-widest rounded-lg border border-secondary/20 shadow-lg">Memory Audit</span>
                     </div>
                     <div className="text-[10rem] font-black text-secondary font-mono tracking-tighter italic drop-shadow-[0_10px_20px_rgba(217,19,236,0.3)]">{results.spaceComplexity}</div>
-                    <p className="text-2xl text-text-secondary mt-14 font-medium leading-relaxed opacity-80 italic">Constant space. Operates directly on the input array. Memory footprint is minimal.</p>
+                    <p className="text-2xl text-text-secondary mt-14 font-medium leading-relaxed opacity-80 italic">{results.spaceExplanation}</p>
                   </motion.div>
                 </div>
 

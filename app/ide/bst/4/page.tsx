@@ -1,13 +1,43 @@
 "use client";
 
+import React, { useEffect } from "react";
 import IDELayout from '@/components/ide/Layout';
 import { Editor } from "@monaco-editor/react";
+import { useSimulationStore } from "@/store/useSimulationStore";
+import { Plus, Minus, Search, RefreshCw, Terminal, Layers } from 'lucide-react';
 
 export default function DsalAlgorithmIdeBstVisualization4() {
+  const { setUserCode, setPlaygroundLanguage } = useSimulationStore();
+
+  useEffect(() => {
+    setUserCode(`struct Node {
+  int val;
+  Node *left, *right;
+  Node(int x) : val(x), left(NULL), right(NULL) {}
+};
+
+Node* insert(Node* root, int val) {
+  if (!root) return new Node(val);
+
+  if (val < root->val) {
+    root->left = insert(root->left, val);
+  } else {
+    root->right = insert(root->right, val);
+  }
+  return root;
+}`);
+    setPlaygroundLanguage("cpp");
+  }, [setUserCode, setPlaygroundLanguage]);
   return (
     <IDELayout
       title="Binary Search Tree"
-      category="Trees"
+      category="Non-Linear"
+      operations={[
+        { name: 'Insert', onClick: () => {}, icon: <Plus size={14} /> },
+        { name: 'Delete', onClick: () => {}, icon: <Minus size={14} /> },
+        { name: 'Search', onClick: () => {}, icon: <Search size={14} /> },
+        { name: 'Reset', onClick: () => {}, icon: <RefreshCw size={14} /> },
+      ]}
       activeStep="Step 4/12"
       totalSteps={12}
       currentStep={4}

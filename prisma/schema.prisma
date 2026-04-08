@@ -6,8 +6,94 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?
+  access_token       String?
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          String    @default("USER") // "USER" or "ADMIN"
+  accounts      Account[]
+  sessions      Session[]
+  snippets      Snippet[]
+  progress      UserProgress[]
+  lessonProgress LessonProgress[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Snippet {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  code      String
+  language  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Module {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  order       Int       @default(0)
+  lectures    Lecture[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Lecture {
+  id          String   @id @default(cuid())
+  moduleId    String
+  module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title       String
+  content     String   // Markdown content
+  videoUrl    String?  // YouTube/Vimeo embed URL
+  order       Int      @default(0)
+  lessonId    String?  // Optional link to a coding lesson
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  progress    UserProgress[]
+  quiz        QuizQuestion[]
 }
 
 model Lesson {
@@ -24,6 +110,7 @@ model Lesson {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   steps             Step[]
+  lessonProgress    LessonProgress[]
 }
 
 model Step {
@@ -41,4 +128,48 @@ model Step {
   updatedAt       DateTime @updatedAt
 
   @@unique([lessonId, order])
+}
+
+model UserProgress {
+  id        String   @id @default(cuid())
+  userId    String
+  lectureId String
+  completed Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lecture Lecture @relation(fields: [lectureId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lectureId])
+}
+
+model QuizQuestion {
+  id            String   @id @default(cuid())
+  lectureId     String
+  question      String
+  options       String   // JSON array of strings
+  correctAnswer Int      // Index of the correct option
+  explanation   String
+  order         Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  lecture       Lecture  @relation(fields: [lectureId], references: [id], onDelete: Cascade)
+}
+
+model LessonProgress {
+  id        String   @id @default(cuid())
+  userId    String
+  lessonId  String
+  code      String   // The user's current code for this lesson
+  completed Boolean  @default(false)
+  lastStep  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
 }

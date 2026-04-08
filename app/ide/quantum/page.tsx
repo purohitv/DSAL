@@ -6,6 +6,8 @@ import Editor from "@monaco-editor/react";
 import IDELayout from "@/components/ide/Layout";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { useSimulationStore } from "@/store/useSimulationStore";
+import { Play, Settings, Trash2, Terminal, Layers } from 'lucide-react';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -47,6 +49,12 @@ export default function QuantumAlgorithmIde() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [commandHistory, setCommandHistory] = useState<{cmd: string, response: string}[]>([]);
+  const { setUserCode, setPlaygroundLanguage } = useSimulationStore();
+
+  useEffect(() => {
+    setUserCode(QASM_CODE(numQubits, targetState));
+    setPlaygroundLanguage("qasm");
+  }, [numQubits, targetState, setUserCode, setPlaygroundLanguage]);
 
   const handleCommand = (val: string) => {
     const parts = val.trim().split(/\s+/);
@@ -205,8 +213,14 @@ export default function QuantumAlgorithmIde() {
 
   return (
     <IDELayout
-      title="Quantum IDE"
-      category="Grover's Search"
+      title="Quantum Search"
+      category="Advanced"
+      operations={[
+        { name: 'Run Grover', onClick: () => handleCommand('run'), icon: <Play size={14} /> },
+        { name: 'Set 3 Qubits', onClick: () => handleCommand('set_qubits 3'), icon: <Settings size={14} /> },
+        { name: 'Set 4 Qubits', onClick: () => handleCommand('set_qubits 4'), icon: <Settings size={14} /> },
+        { name: 'Clear History', onClick: () => handleCommand('clear'), icon: <Trash2 size={14} /> },
+      ]}
       showTimeline={true}
       currentStep={currentStep + 1}
       totalSteps={steps.length || 1}
@@ -217,7 +231,6 @@ export default function QuantumAlgorithmIde() {
       onPrev={() => setCurrentStep(prev => Math.max(0, prev - 1))}
       onNext={() => setCurrentStep(prev => Math.min(steps.length - 1, prev + 1))}
       onSetPlaybackSpeed={setPlaybackSpeed}
-      extraControls={controls}
       leftPanel={{
         title: "Source View",
         subtitle: "grover.qasm",

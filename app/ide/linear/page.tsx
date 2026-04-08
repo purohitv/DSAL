@@ -3,13 +3,18 @@
 import IDELayout from '@/components/ide/Layout';
 import { useTimelineStore } from '@/store/useTimelineStore';
 import { useMockTimeline } from '@/hooks/useMockTimeline';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Editor from "@monaco-editor/react";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+import { useSimulationStore } from "@/store/useSimulationStore";
+import { Plus, Minus, Square, Play, ArrowRight, Terminal, Code, Layers, Database, Eye, Search } from 'lucide-react';
 
-export default function DsalLinearStructureVisualization() {
+function LinearStructureContent() {
   useMockTimeline();
+  const searchParams = useSearchParams();
+  const type = searchParams.get('type') || 'array';
   
   const { 
     frames, 
@@ -23,6 +28,105 @@ export default function DsalLinearStructureVisualization() {
     setPlaybackSpeed,
     appendFrames
   } = useTimelineStore();
+
+  const { setUserCode, setPlaygroundLanguage } = useSimulationStore();
+
+  useEffect(() => {
+    let code = '';
+    if (type === 'array') {
+      code = `#include <iostream>
+using namespace std;
+
+int main() {
+    int arr[6] = {10, 20, 30, 40, 50};
+    int size = 5;
+    
+    // Insert 25 at index 2
+    for(int i = size; i > 2; i--) arr[i] = arr[i-1];
+    arr[2] = 25;
+    size++;
+    
+    return 0;
+}`;
+    } else if (type === 'linked-list') {
+      code = `#include <iostream>
+using namespace std;
+
+struct Node {
+    int data;
+    Node* next;
+};
+
+void insertHead(Node** head, int val) {
+    Node* newNode = new Node();
+    newNode->data = val;
+    newNode->next = *head;
+    *head = newNode;
+}
+
+int main() {
+    Node* head = NULL;
+    insertHead(&head, 10);
+    insertHead(&head, 20);
+    return 0;
+}`;
+    } else if (type === 'queue') {
+      code = `#include <iostream>
+using namespace std;
+
+#define MAX 6
+int queue[MAX];
+int front = -1, rear = -1;
+
+void enqueue(int val) {
+    if (rear == MAX - 1) return;
+    if (front == -1) front = 0;
+    queue[++rear] = val;
+}
+
+int main() {
+    enqueue(10);
+    enqueue(20);
+    return 0;
+}`;
+    } else {
+      code = `#include <iostream>
+using namespace std;
+
+#define MAX 6
+int stack[MAX];
+int top = -1;
+
+void push(int val) {
+    if (top >= MAX - 1) {
+        cout << "Stack Overflow\\n";
+        return;
+    }
+    stack[++top] = val;
+    cout << "Pushed " << val << "\\n";
+}
+
+int pop() {
+    if (top < 0) {
+        cout << "Stack Underflow\\n";
+        return -1;
+    }
+    int val = stack[top--];
+    cout << "Popped " << val << "\\n";
+    return val;
+}
+
+int peek() {
+    if (top < 0) {
+        cout << "Stack is Empty\\n";
+        return -1;
+    }
+    return stack[top];
+}`;
+    }
+    setUserCode(code);
+    setPlaygroundLanguage("cpp");
+  }, [setUserCode, setPlaygroundLanguage, type]);
 
   const handleCommand = (val: string) => {
     const parts = val.trim().split(/\s+/);
@@ -57,27 +161,30 @@ export default function DsalLinearStructureVisualization() {
               { id: Date.now().toString(), functionName: `push(${num})`, line: 11, fileName: 'stack.cpp' },
               ...lastFrame.callStack.filter(f => f.functionName === 'main()')
             ],
-            variables: lastFrame.variables.map(v => v.name === 'top' ? { ...v, value: top } : v),
+            variables: [
+              { name: 'top', value: top, type: 'int' },
+              { name: 'val', value: num, type: 'int' }
+            ],
             heap: [...heap],
             output: [...output],
-            activeLine: 15,
-            description: `Push ${num} to stack`
+            description: `Pushed ${num} onto stack`
           });
         }
+        appendFrames(newFrames);
       }
     } else if (cmd === 'pop') {
       if (top < 0) {
-        output.push(`Stack Underflow! Cannot pop`);
+        output.push(`Stack Underflow!`);
         newFrames.push({
           ...lastFrame,
           output: [...output],
           description: `Attempt pop() - Underflow`
         });
       } else {
-        const popped = heap[top];
-        heap.pop();
+        const val = heap[top];
+        heap[top] = 0;
         top--;
-        output.push(`Popped ${popped} from index ${top + 1}`);
+        output.push(`Popped ${val} from stack`);
         
         newFrames.push({
           ...lastFrame,
@@ -85,88 +192,60 @@ export default function DsalLinearStructureVisualization() {
             { id: Date.now().toString(), functionName: `pop()`, line: 20, fileName: 'stack.cpp' },
             ...lastFrame.callStack.filter(f => f.functionName === 'main()')
           ],
-          variables: lastFrame.variables.map(v => v.name === 'top' ? { ...v, value: top } : v),
+          variables: [
+            { name: 'top', value: top, type: 'int' }
+          ],
           heap: [...heap],
           output: [...output],
-          activeLine: 22,
-          description: `Pop from stack`
+          description: `Popped ${val} from stack`
         });
       }
-    } else {
-      output.push(`Command not found: ${cmd}`);
-      newFrames.push({
-        ...lastFrame,
-        output: [...output],
-        description: `Invalid command`
-      });
-    }
-
-    if (newFrames.length > 0) {
       appendFrames(newFrames);
-      if (!isPlaying) {
-        togglePlayback();
-      }
     }
   };
 
-  const currentFrame = frames[currentFrameIndex] || null;
-  const editorRef = useRef<any>(null);
-  const monacoRef = useRef<any>(null);
-  const decorationsRef = useRef<any[]>([]);
+  const currentFrame = frames[currentFrameIndex];
 
-  // Highlight active line in Monaco
-  useEffect(() => {
-    if (editorRef.current && monacoRef.current) {
-      const editor = editorRef.current;
-      const monaco = monacoRef.current;
-      const activeLine = currentFrame?.activeLine;
+  const getOperations = () => {
+    const baseOps = [
+      { name: 'Reset', onClick: () => appendFrames([frames[0]]), icon: <Square size={14} /> },
+    ];
 
-      if (activeLine !== undefined && activeLine !== null) {
-        decorationsRef.current = editor.deltaDecorations(decorationsRef.current || [], [
-          {
-            range: new monaco.Range(activeLine, 1, activeLine, 1),
-            options: {
-              isWholeLine: true,
-              className: 'bg-primary/20 border-l-4 border-primary',
-            }
-          }
-        ]);
-        editor.revealLineInCenterIfOutsideViewport(activeLine);
-      } else {
-        decorationsRef.current = editor.deltaDecorations(decorationsRef.current || [], []);
-      }
+    if (type === 'array') {
+      return [
+        { name: 'Insert', onClick: () => handleCommand('insert 10'), icon: <Plus size={14} /> },
+        { name: 'Delete', onClick: () => handleCommand('delete 0'), icon: <Minus size={14} /> },
+        { name: 'Search', onClick: () => handleCommand('search 42'), icon: <Search size={14} /> },
+        ...baseOps
+      ];
+    } else if (type === 'linked-list') {
+      return [
+        { name: 'Insert Head', onClick: () => handleCommand('insert_head 10'), icon: <Plus size={14} /> },
+        { name: 'Insert Tail', onClick: () => handleCommand('insert_tail 20'), icon: <Plus size={14} /> },
+        { name: 'Delete', onClick: () => handleCommand('delete 10'), icon: <Minus size={14} /> },
+        ...baseOps
+      ];
+    } else if (type === 'queue') {
+      return [
+        { name: 'Enqueue', onClick: () => handleCommand('enqueue 10'), icon: <Plus size={14} /> },
+        { name: 'Dequeue', onClick: () => handleCommand('dequeue'), icon: <Minus size={14} /> },
+        ...baseOps
+      ];
     }
-  }, [currentFrame?.activeLine]);
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isPlaying && currentFrameIndex < frames.length - 1) {
-      interval = setInterval(() => {
-        nextFrame();
-      }, 1000 / playbackSpeed);
-    }
-    return () => clearInterval(interval);
-  }, [isPlaying, currentFrameIndex, frames.length, playbackSpeed, nextFrame]);
-
-  const code = `void push(int value) {
-  // Check overflow
-  if (top >= capacity - 1)
-    return;
-  data[++top] = value;
-  cout << "Pushed " << value;
-}
-
-int main() {
-  push(10);
-  push(20);
-  push(42);
-  return 0;
-}`;
+    
+    return [
+      { name: 'Push', onClick: () => handleCommand('push 10'), icon: <Plus size={14} /> },
+      { name: 'Pop', onClick: () => handleCommand('pop'), icon: <Minus size={14} /> },
+      { name: 'Peek', onClick: () => handleCommand('peek'), icon: <Eye size={14} /> },
+      ...baseOps
+    ];
+  };
 
   return (
     <IDELayout
-      title="Stack Visualization"
-      category="Linear Structures"
+      title={type.charAt(0).toUpperCase() + type.slice(1).replace('-', ' ')}
+      category="Basic"
+      operations={getOperations()}
       activeStep={currentFrame?.description}
       totalSteps={frames.length}
       currentStep={currentFrameIndex + 1}
@@ -178,39 +257,23 @@ int main() {
       onSetPlaybackSpeed={setPlaybackSpeed}
       leftPanel={{
         title: "Source View",
-        subtitle: "stack.cpp",
+        subtitle: `${type.replace('-', '_')}.cpp`,
         icon: "code",
         content: (
           <div className="flex-1 overflow-hidden bg-[#0d1117] h-full">
-            <style>{`
-              .bg-primary\\/20 {
-                background-color: rgba(127, 19, 236, 0.2) !important;
-              }
-              .border-l-4 {
-                border-left-width: 4px !important;
-              }
-            `}</style>
             <Editor
               height="100%"
               defaultLanguage="cpp"
               theme="vs-dark"
-              value={code}
+              value={useSimulationStore.getState().userCode}
               options={{
                 minimap: { enabled: false },
                 fontSize: 10,
                 readOnly: true,
                 scrollBeyondLastLine: false,
-                lineNumbers: (num) => String(num + 10), // Offset to match original line numbers if needed
-                glyphMargin: false,
-                folding: false,
-                lineDecorationsWidth: 0,
-                lineNumbersMinChars: 3,
+                lineNumbers: 'on',
                 padding: { top: 8, bottom: 8 },
-                renderLineHighlight: 'none',
-              }}
-              onMount={(editor, monaco) => {
-                editorRef.current = editor;
-                monacoRef.current = monaco;
+                automaticLayout: true
               }}
             />
           </div>
@@ -218,96 +281,58 @@ int main() {
       }}
       centerPanel={{
         title: "Simulation Stage",
-        subtitle: "Array-based Stack",
+        subtitle: "Visualizer",
         icon: "science",
         content: (
-          <div className="flex-1 flex items-center justify-center relative overflow-hidden bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-900 via-[#101622] to-[#0a0d14] h-full">
-            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "linear-gradient(#3b4354 1px, transparent 1px), linear-gradient(90deg, #3b4354 1px, transparent 1px)", backgroundSize: "40px 40px" }}></div>
-            <TransformWrapper
-              initialScale={1}
-              minScale={0.2}
-              maxScale={4}
-              centerOnInit
-              wheel={{ step: 0.1 }}
-            >
-              <TransformComponent wrapperStyle={{ width: "100%", height: "100%" }} contentStyle={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <div className="flex items-end gap-8 relative z-10">
-                  <div className="flex relative pr-12">
-                    {/* Indices */}
-                    <div className="flex flex-col-reverse justify-start mr-2 gap-1 pb-1">
-                      {Array.from({ length: 7 }).map((_, i) => (
-                        <div key={i} className={`h-8 flex items-center justify-end text-[9px] font-mono ${i === (currentFrame?.variables.find(v => v.name === 'top')?.value as number) ? 'text-white font-bold' : 'text-gray-500'}`}>
-                          {i}
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Stack Container */}
-                    <div className="flex flex-col-reverse gap-1 bg-[#282e39] p-1.5 rounded-lg border border-[#3b4354] shadow-2xl min-h-[200px] justify-end relative overflow-hidden">
-                      <AnimatePresence mode="popLayout">
-                        {Array.from({ length: 7 }).map((_, i) => {
-                          const value = currentFrame?.heap[i];
-                          const isTop = i === (currentFrame?.variables.find(v => v.name === 'top')?.value as number);
-                          
-                          return (
-                            <motion.div 
-                              key={i}
-                              initial={{ opacity: 0, scale: 0.8, y: 30, rotateX: -45 }}
-                              animate={{ 
-                                opacity: 1, 
-                                scale: 1, 
-                                y: 0,
-                                rotateX: 0,
-                                backgroundColor: isTop ? 'rgba(127, 19, 236, 1)' : 'rgba(28, 33, 44, 1)',
-                                borderColor: isTop ? 'rgba(255, 255, 255, 0.2)' : 'rgba(59, 67, 84, 1)',
-                                boxShadow: isTop ? '0 0 10px rgba(127, 19, 236, 0.5)' : 'none'
-                              }}
-                              transition={{ type: 'spring', damping: 15, stiffness: 100 }}
-                              className={`w-16 h-8 border rounded flex items-center justify-center font-mono text-xs shadow-sm transition-all relative group overflow-hidden ${isTop ? 'text-white font-bold transform scale-105 z-10' : 'text-white'}`}
+          <div className="flex-1 relative overflow-hidden bg-[#0a0d14] h-full">
+            <TransformWrapper initialScale={1} minScale={0.5} maxScale={2}>
+              <TransformComponent wrapperStyle={{ width: "100%", height: "100%" }}>
+                <div className="flex items-center justify-center min-w-[800px] min-h-[500px] p-20">
+                  <div className="relative flex gap-1 items-end h-40 border-b-2 border-slate-700 px-10">
+                    {currentFrame?.heap.map((val: any, i: number) => (
+                      <motion.div
+                        key={i}
+                        layout
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={{ 
+                          opacity: val ? 1 : 0.3, 
+                          scale: 1,
+                          height: val ? 100 : 40,
+                          backgroundColor: i === (currentFrame.variables.find(v => v.name === 'top')?.value as number) ? '#7f13ec' : '#1e293b'
+                        }}
+                        className="w-16 rounded-t-lg flex items-center justify-center text-white font-bold text-xl shadow-lg border border-white/10"
+                      >
+                        <AnimatePresence mode="wait">
+                          {val ? (
+                            <motion.span
+                              key={val}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -10 }}
                             >
-                              {value !== undefined ? (
-                                <>
-                                  <motion.span 
-                                    initial={{ scale: 0.5 }}
-                                    animate={{ scale: 1 }}
-                                  >
-                                    {value}
-                                  </motion.span>
-                                </>
-                              ) : (
-                                <span className="text-[9px] font-mono text-gray-700/50">null</span>
-                              )}
-                            </motion.div>
-                          );
-                        })}
-                      </AnimatePresence>
-                    </div>
-
-                    {/* Top Pointer */}
-                    <div className="absolute right-0 bottom-0 h-full w-8 pointer-events-none">
-                      <AnimatePresence>
-                        {(() => {
-                          const topIndex = currentFrame?.variables.find(v => v.name === 'top')?.value as number;
-                          if (topIndex >= 0 && topIndex < 7) {
-                            const bottomPos = 6 + (topIndex * 36); 
-                            return (
-                              <motion.div 
-                                key="top-pointer"
-                                initial={{ opacity: 0, x: 30, scale: 0.5 }}
-                                animate={{ opacity: 1, x: 0, scale: 1 }}
-                                exit={{ opacity: 0, x: 30, scale: 0.5 }}
-                                className="absolute -right-2 flex items-center transition-all duration-300 animate-pulse" 
-                                style={{ bottom: `${bottomPos}px` }}
-                              >
-                                <span className="material-symbols-outlined text-primary rotate-180" style={{ fontSize: "16px" }}>arrow_right_alt</span>
-                                <span className="ml-1 bg-primary text-white text-[8px] font-bold px-1 py-0.5 rounded shadow-lg uppercase tracking-wider">Top</span>
-                              </motion.div>
-                            );
-                          }
-                          return null;
-                        })()}
-                      </AnimatePresence>
-                    </div>
+                              {val}
+                            </motion.span>
+                          ) : (
+                            <span className="text-slate-600 text-xs">null</span>
+                          )}
+                        </AnimatePresence>
+                      </motion.div>
+                    ))}
+                    
+                    {/* Pointer */}
+                    <AnimatePresence>
+                      {type === 'stack' && (
+                        <motion.div
+                          layoutId="pointer"
+                          className="absolute -bottom-12 flex flex-col items-center"
+                          animate={{ x: (currentFrame?.variables.find(v => v.name === 'top')?.value as number || 0) * 68 + 40 }}
+                          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                        >
+                          <ArrowRight className="-rotate-90 text-primary mb-1" size={20} />
+                          <span className="text-[10px] font-black text-primary uppercase tracking-widest">Top</span>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </div>
               </TransformComponent>
@@ -320,121 +345,31 @@ int main() {
         subtitle: "Live Stream",
         icon: "terminal",
         content: (
-          <div className="flex-1 overflow-y-auto p-1.5 space-y-1 font-mono text-[9px] bg-[#0d1117] h-full flex flex-col">
-            <div className="flex-1 flex flex-col gap-1 overflow-y-auto flex-col-reverse">
-              <AnimatePresence mode="popLayout">
-                {currentFrame?.output.map((out, i) => (
-                  <motion.div 
-                    key={`${out}-${i}`}
-                    initial={{ opacity: 0, x: -10, filter: 'blur(4px)' }}
-                    animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-                    className={`flex gap-1.5 ${i === currentFrame.output.length - 1 ? "text-white font-bold" : "text-gray-300 opacity-60"}`}
-                  >
-                    <span className="text-blue-500 font-bold">➜</span>
-                    <span>{out}</span>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-            <div className="flex items-center gap-1.5 mt-1 border-t border-[#3b4354] pt-1">
-              <span className="text-blue-500 font-bold">➜</span>
-              <input 
-                type="text" 
-                maxLength={30}
-                className="flex-1 bg-[#1c212c] border border-[#3b4354] rounded px-1.5 py-0.5 outline-none text-white font-mono text-[9px] placeholder:text-gray-500 focus:bg-[#282e39] focus:border-primary/50 transition-colors"
-                placeholder="Enter command (e.g., 'push 5', 'pop')..."
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    const input = e.currentTarget;
-                    const val = input.value;
-                    if (val) {
-                      handleCommand(val);
-                      input.value = '';
-                    }
-                  }
-                }}
-                disabled={isPlaying}
-              />
-            </div>
-          </div>
-        )
-      }}
-      rightPanelTop={{
-        title: "Call Stack",
-        subtitle: "Memory Monitor",
-        icon: "layers",
-        content: (
-          <div className="flex-1 overflow-y-auto p-1 space-y-0.5 bg-[#1c212c] h-full">
-            <AnimatePresence mode="popLayout">
-              {currentFrame?.callStack.map((frame, i) => (
-                <motion.div 
-                  key={frame.id}
-                  initial={{ opacity: 0, x: 15, scale: 0.95 }}
-                  animate={{ opacity: 1, x: 0, scale: 1 }}
-                  className={`group flex items-center justify-between p-1.5 rounded transition-colors ${
-                    i === 0 
-                    ? 'bg-[#282e39] border-l-2 border-primary rounded-r shadow-sm cursor-pointer hover:bg-[#323945]' 
-                    : 'border border-transparent hover:bg-[#282e39]/50 opacity-60'
-                  }`}
-                >
-                  <div className="flex flex-col">
-                    <span className={`font-mono text-[10px] ${i === 0 ? 'text-white font-medium' : 'text-gray-300'}`}>{frame.functionName}</span>
-                    <span className={`text-[9px] ${i === 0 ? 'text-[#9da6b9]' : 'text-gray-400'}`}>Line {frame.line}</span>
-                  </div>
-                  {i === 0 && <span className="material-symbols-outlined text-primary opacity-0 group-hover:opacity-100 text-[10px]">arrow_back</span>}
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-        )
-      }}
-      rightPanelBottom={{
-        title: "Variables",
-        subtitle: "Local Scope",
-        icon: "visibility",
-        content: (
-          <div className="flex-1 overflow-y-auto bg-[#1c212c] h-full">
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-[#282e39] text-[9px] uppercase text-[#b0b8c9] font-semibold sticky top-0">
-                <tr>
-                  <th className="px-2 py-1">Name</th>
-                  <th className="px-2 py-1">Value</th>
-                  <th className="px-2 py-1">Type</th>
-                </tr>
-              </thead>
-              <tbody className="text-[10px] font-mono divide-y divide-[#3b4354]">
-                <AnimatePresence mode="popLayout">
-                  {currentFrame?.variables.map((v, i) => {
-                    const prevVar = currentFrameIndex > 0 ? frames[currentFrameIndex - 1].variables.find(pv => pv.name === v.name) : null;
-                    const hasChanged = prevVar && prevVar.value !== v.value;
-                    
-                    return (
-                    <motion.tr 
-                      key={v.name}
-                      initial={{ opacity: 0, y: 5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className={hasChanged ? 'bg-primary/10' : ''}
-                    >
-                      <td className="px-2 py-1 text-blue-300 font-medium">{v.name}</td>
-                      <td className="px-2 py-1 text-white">
-                        <motion.span
-                          key={String(v.value)}
-                          initial={{ scale: hasChanged ? 1.2 : 1, color: hasChanged ? '#60a5fa' : '#ffffff' }}
-                          animate={{ scale: 1, color: '#ffffff' }}
-                          transition={{ duration: 0.5 }}
-                        >
-                          {String(v.value)}
-                        </motion.span>
-                      </td>
-                      <td className="px-2 py-1 text-[#9da6b9]">{v.type}</td>
-                    </motion.tr>
-                  )})}
-                </AnimatePresence>
-              </tbody>
-            </table>
+          <div className="flex-1 overflow-y-auto p-4 space-y-2 font-mono text-xs bg-[#0d1117] h-full">
+            {currentFrame?.output.map((line, i) => (
+              <motion.div 
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                key={i} 
+                className="flex gap-3 text-slate-400 border-l border-slate-800 pl-3"
+              >
+                <span className="text-slate-600 select-none w-4">{i + 1}</span>
+                <span className={line.includes('Overflow') || line.includes('Underflow') ? 'text-red-400' : 'text-slate-300'}>
+                  {line}
+                </span>
+              </motion.div>
+            ))}
           </div>
         )
       }}
     />
+  );
+}
+
+export default function DsalLinearStructureVisualization() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LinearStructureContent />
+    </Suspense>
   );
 }

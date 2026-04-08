@@ -36,7 +36,9 @@ export default function ProgressiveLearningPath() {
       color: 'text-primary',
       accentColor: 'primary',
       modules: [
-        { name: 'Linear Structures', link: '/ide/linear', status: 'completed' },
+        { name: 'Array', link: '/ide/linear', status: 'completed' },
+        { name: 'Array Reversal', link: '/ide/classic/array-reversal', status: 'available' },
+        { name: 'Valid Parentheses (Stack)', link: '/ide/classic/valid-parentheses', status: 'available' },
         { name: 'Binary Search Trees', link: '/ide/classic/bst-insertion', status: 'completed' },
         { name: 'Red-Black Trees', link: '/ide/bst/2', status: 'completed' },
         { name: 'AVL Trees', link: '/ide/bst/3', status: 'in-progress' },
@@ -63,9 +65,9 @@ export default function ProgressiveLearningPath() {
       color: 'text-accent-mint',
       accentColor: 'accent-mint',
       modules: [
-        { name: 'Qubits & Superposition', link: '#', status: 'locked' },
-        { name: 'Quantum Gates (H, X, CNOT)', link: '#', status: 'locked' },
-        { name: 'Entanglement & Bell States', link: '#', status: 'locked' },
+        { name: 'Qubits & Superposition', link: '/ide/quantum/qubits', status: 'available' },
+        { name: 'Quantum Gates (H, X, CNOT)', link: '/ide/quantum/gates', status: 'available' },
+        { name: 'Entanglement & Bell States', link: '/ide/quantum/entanglement', status: 'available' },
       ]
     },
     {
@@ -77,8 +79,8 @@ export default function ProgressiveLearningPath() {
       accentColor: 'pink-500',
       modules: [
         { name: 'Grover\'s Search Algorithm', link: '/ide/quantum/grovers-search', status: 'available' },
-        { name: 'Shor\'s Factoring Algorithm', link: '#', status: 'locked' },
-        { name: 'Quantum Fourier Transform', link: '#', status: 'locked' },
+        { name: 'Shor\'s Factoring Algorithm', link: '/ide/quantum/shors', status: 'available' },
+        { name: 'Quantum Fourier Transform', link: '/ide/quantum/qft', status: 'available' },
       ]
     }
   ];

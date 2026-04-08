@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import { CLASSIC_MENU, QUANTUM_MENU } from '@/lib/menu';
 
+import { AuthButton } from "@/components/AuthButton";
+
 export default function Home() {
     const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
     const [activeTopLevel, setActiveTopLevel] = useState<number | null>(null);
@@ -40,12 +42,13 @@ export default function Home() {
             <div className="relative z-10 flex flex-col min-h-[1080px]">
                 <header className="absolute top-0 left-0 right-0 z-50 px-4 py-2">
                     <nav className="glass-panel !bg-panel-dark/95 rounded-full max-w-7xl mx-auto px-5 h-14 flex items-center justify-between shadow-lg shadow-primary/10 relative">
-                        <div className="flex items-center gap-3 cursor-pointer">
-                            <div className="text-primary animate-pulse">
-                                <span className="material-symbols-outlined text-3xl">hub</span>
+                        <Link href="/" className="flex items-center gap-3 cursor-pointer group">
+                            <div className="relative">
+                                <img src="/logo.png" alt="DSAL Logo" className="w-8 h-8 object-contain group-hover:scale-110 transition-transform duration-500" />
+                                <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full animate-pulse" />
                             </div>
-                            <span className="text-2xl font-black tracking-tighter">DSAL</span>
-                        </div>
+                            <span className="text-2xl font-black tracking-tighter text-white group-hover:text-primary transition-colors italic uppercase">DSAL</span>
+                        </Link>
                         
                         <div className="hidden md:flex items-center gap-4 h-full">
                             
@@ -89,7 +92,7 @@ export default function Home() {
                                                                 initial={{ opacity: 0, x: 10 }}
                                                                 animate={{ opacity: 1, x: 0 }}
                                                                 exit={{ opacity: 0, x: 10 }}
-                                                                className="absolute top-0 left-full ml-1 w-72 rounded-2xl overflow-visible shadow-2xl border border-white/10 py-4 bg-panel-dark z-50"
+                                                                className="absolute top-0 left-full w-72 rounded-2xl overflow-visible shadow-2xl border border-white/10 py-4 bg-panel-dark z-50"
                                                             >
                                                                 {top.categories ? (
                                                                     top.categories.map((section, sIdx) => (
@@ -113,7 +116,7 @@ export default function Home() {
                                                                                         initial={{ opacity: 0, x: 10 }}
                                                                                         animate={{ opacity: 1, x: 0 }}
                                                                                         exit={{ opacity: 0, x: 10 }}
-                                                                                        className="absolute top-0 left-full ml-1 w-64 rounded-2xl overflow-visible shadow-2xl border border-white/10 py-4 bg-panel-dark z-50"
+                                                                                        className="absolute top-0 left-full w-64 rounded-2xl overflow-visible shadow-2xl border border-white/10 py-4 bg-panel-dark z-50"
                                                                                     >
                                                                                         {section.subcategories ? (
                                                                                             section.subcategories.map((sub, subIdx) => (
@@ -134,7 +137,7 @@ export default function Home() {
                                                                                                                 initial={{ opacity: 0, x: -10 }}
                                                                                                                 animate={{ opacity: 1, x: 0 }}
                                                                                                                 exit={{ opacity: 0, x: -10 }}
-                                                                                                                className="absolute top-0 right-full mr-1 w-64 rounded-2xl overflow-hidden shadow-2xl border border-white/10 py-4 bg-panel-dark z-50"
+                                                                                                                className="absolute top-0 right-full w-64 rounded-2xl overflow-hidden shadow-2xl border border-white/10 py-4 bg-panel-dark z-50"
                                                                                                             >
                                                                                                                 {sub.items.map((item, iIdx) => (
                                                                                                                     <Link key={iIdx} href={item.href} className="block px-6 py-3 group hover:bg-white/5 border-l-4 border-transparent hover:border-primary transition-all">
@@ -196,13 +199,21 @@ export default function Home() {
                                             transition={{ duration: 0.2 }}
                                             className="absolute top-full left-0 mt-2 w-72 glass-panel rounded-2xl overflow-hidden shadow-2xl border-2 border-white/10 p-6 bg-panel-dark/95 backdrop-blur-2xl space-y-4"
                                         >
-                                            <h3 className="text-accent font-black text-sm uppercase tracking-[0.2em] border-b border-accent/20 pb-2">Quantum Lab</h3>
-                                            {QUANTUM_MENU.map((item, iIdx) => (
-                                                <Link key={iIdx} href={item.href} className="group block">
-                                                    <div className="text-sm font-bold text-slate-300 group-hover:text-accent transition-colors">{item.name}</div>
-                                                    <div className="text-[10px] text-slate-500 group-hover:text-slate-300 transition-colors uppercase tracking-tighter">{item.desc}</div>
-                                                </Link>
-                                            ))}
+                                            <div className="space-y-6">
+                                                {QUANTUM_MENU.map((category, cIdx) => (
+                                                    <div key={cIdx} className="space-y-3">
+                                                        <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-accent/60">{category.name}</h4>
+                                                        <div className="space-y-2">
+                                                            {category.items.map((item, iIdx) => (
+                                                                <Link key={iIdx} href={item.href} className="group block">
+                                                                    <div className="text-sm font-bold text-slate-300 group-hover:text-accent transition-colors">{item.name}</div>
+                                                                    <div className="text-[10px] text-slate-500 group-hover:text-slate-300 transition-colors uppercase tracking-tighter">{item.desc}</div>
+                                                                </Link>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
@@ -237,6 +248,7 @@ export default function Home() {
                         </div>
 
                         <div className="flex items-center gap-4">
+                            <AuthButton />
                             <Link href="/library">
                                 <button className="bg-primary hover:bg-primary/90 text-white text-sm font-black px-8 py-3 rounded-full transition-all hover:shadow-[0_0_30px_rgba(127,19,236,0.8)] uppercase tracking-widest">
                                     Launch App
@@ -338,21 +350,20 @@ export default function Home() {
                                     <span className="material-symbols-outlined">presentation_chart</span>
                                 </div>
                                 <h3 className="text-xl font-bold text-white mb-2">Lecture Mode</h3>
-                                <p className="text-slate-400 text-sm">Present algorithms with frame-by-frame control and presenter notes.</p>
+                                <p className="text-slate-400 text-sm">Interactive data structures and algorithms lectures with video and code integration.</p>
                                 <div className="mt-8 flex items-center gap-2">
-                                    <Link href="/lecture" className="text-xs font-bold text-lecture-primary hover:text-white transition-colors uppercase tracking-widest">Launch Presentation</Link>
+                                    <Link href="/lecture" className="text-xs font-bold text-lecture-primary hover:text-white transition-colors uppercase tracking-widest">Start Learning</Link>
                                 </div>
                             </div>
                             <div className="col-span-1 glass-panel rounded-2xl p-8 relative overflow-hidden group hover:border-accent/50 transition-colors">
                                 <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent"></div>
                                 <div className="w-12 h-12 rounded-lg bg-accent/20 flex items-center justify-center mb-4 text-accent">
-                                    <span className="material-symbols-outlined">science</span>
+                                    <span className="material-symbols-outlined">analytics</span>
                                 </div>
-                                <h3 className="text-xl font-bold text-white mb-2">Quantum Lab</h3>
-                                <p className="text-slate-400 text-sm">Simulate qubits and superposition states in a noise-free environment.</p>
+                                <h3 className="text-xl font-bold text-white mb-2">Complexity Lab</h3>
+                                <p className="text-slate-400 text-sm">AI-powered Big O analysis. Paste your code and get instant time/space complexity metrics.</p>
                                 <div className="mt-8 flex items-center gap-2">
-                                    <div className="w-3 h-3 rounded-full bg-accent animate-ping"></div>
-                                    <span className="text-xs font-mono text-accent">COHERENCE STABLE</span>
+                                    <Link href="/analysis" className="text-xs font-bold text-accent hover:text-white transition-colors uppercase tracking-widest">Analyze Code</Link>
                                 </div>
                             </div>
                             <div className="col-span-1 glass-panel rounded-2xl p-8 relative overflow-hidden group hover:border-blue-500/50 transition-colors">

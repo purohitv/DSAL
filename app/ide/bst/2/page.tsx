@@ -17,6 +17,8 @@ import {
 import '@xyflow/react/dist/style.css';
 import IDELayout from '@/components/ide/Layout';
 import { motion, AnimatePresence } from "framer-motion";
+import { useSimulationStore } from "@/store/useSimulationStore";
+import { Plus, RefreshCw, Minus, Search, Terminal, Layers } from 'lucide-react';
 
 // --- Red-Black Tree Logic ---
 enum Color {
@@ -188,6 +190,73 @@ class RedBlackTree {
     this.logStep(`Insertion of ${value} complete.`);
     return this.steps;
   }
+
+  getMinValueNode(node: RBTNode): RBTNode {
+    let current = node;
+    while (current.left) {
+      current = current.left;
+    }
+    return current;
+  }
+
+  delete(value: number) {
+    this.steps = [];
+    this.logStep(`Deletion in RBT is complex. Performing standard BST delete for demo purposes.`);
+    
+    let current = this.root;
+    while (current && current.value !== value) {
+      this.logStep(`Searching for ${value}...`, [current]);
+      if (value < current.value) current = current.left;
+      else current = current.right;
+    }
+
+    if (!current) {
+      this.logStep(`Value ${value} not found.`);
+      return this.steps;
+    }
+
+    this.logStep(`Found ${value}. Deleting...`, [current]);
+
+    if (!current.left && !current.right) {
+      if (!current.parent) this.root = null;
+      else if (current === current.parent.left) current.parent.left = null;
+      else current.parent.right = null;
+    } else if (!current.left || !current.right) {
+      const child = current.left || current.right;
+      if (!current.parent) {
+        this.root = child;
+        if (this.root) this.root.parent = null;
+      } else if (current === current.parent.left) {
+        current.parent.left = child;
+        if (child) child.parent = current.parent;
+      } else {
+        current.parent.right = child;
+        if (child) child.parent = current.parent;
+      }
+    } else {
+      const successor = this.getMinValueNode(current.right);
+      this.logStep(`Replacing with successor ${successor.value}`, [current, successor]);
+      const tempVal = successor.value;
+      
+      if (!successor.left && !successor.right) {
+        if (successor === successor.parent?.left) successor.parent.left = null;
+        else if (successor.parent) successor.parent.right = null;
+      } else if (successor.right) {
+        if (successor === successor.parent?.left) {
+          successor.parent.left = successor.right;
+          successor.right.parent = successor.parent;
+        } else if (successor.parent) {
+          successor.parent.right = successor.right;
+          successor.right.parent = successor.parent;
+        }
+      }
+      
+      current.value = tempVal;
+    }
+
+    this.logStep(`Deletion complete. (Rebalancing omitted for simplicity)`);
+    return this.steps;
+  }
 }
 
 // --- Helper to convert RBT to React Flow Nodes/Edges ---
@@ -261,6 +330,30 @@ export default function RedBlackTreeVisualization() {
   ]);
   const [callStack, setCallStack] = useState<string[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
+  const { setUserCode, setPlaygroundLanguage } = useSimulationStore();
+
+  useEffect(() => {
+    setUserCode(`enum Color { RED, BLACK };
+
+struct Node {
+  int data;
+  Color color;
+  Node *left, *right, *parent;
+  Node(int data) : data(data), color(RED), left(NULL), right(NULL), parent(NULL) {}
+};
+
+class RedBlackTree {
+private:
+  Node *root;
+  void leftRotate(Node *x);
+  void rightRotate(Node *x);
+  void fixInsert(Node *k);
+public:
+  RedBlackTree() { root = NULL; }
+  void insert(int key);
+};`);
+    setPlaygroundLanguage("cpp");
+  }, [setUserCode, setPlaygroundLanguage]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => setNodes((nds) => applyNodeChanges(changes, nds)),
@@ -279,6 +372,76 @@ export default function RedBlackTreeVisualization() {
 
   const logTerminal = (msg: string) => {
     setTerminalOutput((prev) => [...prev, msg]);
+  };
+
+  const handleReset = () => {
+    const newRbt = new RedBlackTree();
+    setNodes([]);
+    setEdges([]);
+    setTerminalOutput(['> Red-Black Tree Reset. Ready for operations.']);
+    setCallStack([]);
+    setInputValue('');
+  };
+
+  const handleSearch = async () => {
+    const val = parseInt(inputValue);
+    if (isNaN(val)) return;
+    setInputValue('');
+    setIsPlaying(true);
+
+    logTerminal(`> Searching for value: ${val}`);
+    setCallStack([`search(${val})`]);
+
+    let current = rbt.root;
+    let found = false;
+
+    while (current) {
+      updateFlow(rbt.root, [current.id]);
+      logTerminal(`> Visiting node ${current.value}...`);
+      await new Promise((r) => setTimeout(r, 1000));
+
+      if (val === current.value) {
+        found = true;
+        logTerminal(`> Found value ${val}!`);
+        break;
+      } else if (val < current.value) {
+        current = current.left;
+      } else {
+        current = current.right;
+      }
+    }
+
+    if (!found) {
+      logTerminal(`> Value ${val} not found in the tree.`);
+    }
+
+    updateFlow(rbt.root, []);
+    setCallStack([]);
+    setIsPlaying(false);
+  };
+
+  const handleDelete = async () => {
+    const val = parseInt(inputValue);
+    if (isNaN(val)) return;
+    setInputValue('');
+    setIsPlaying(true);
+
+    logTerminal(`> Starting deletion for value: ${val}`);
+    setCallStack([`delete(${val})`]);
+
+    const steps = rbt.delete(val);
+
+    for (let i = 0; i < steps.length; i++) {
+      const step = steps[i];
+      updateFlow(step.node, step.activeIds);
+      logTerminal(`> ${step.message}`);
+      
+      await new Promise((r) => setTimeout(r, 1200));
+    }
+
+    updateFlow(rbt.root, []);
+    setCallStack([]);
+    setIsPlaying(false);
   };
 
   const handleInsert = async () => {
@@ -339,9 +502,14 @@ export default function RedBlackTreeVisualization() {
   return (
     <IDELayout
       title="Red-Black Tree"
-      category="Trees"
+      category="Intermediate"
+      operations={[
+        { name: 'Insert', onClick: handleInsert, icon: <Plus size={14} /> },
+        { name: 'Delete', onClick: handleDelete, icon: <Minus size={14} /> },
+        { name: 'Search', onClick: handleSearch, icon: <Search size={14} /> },
+        { name: 'Reset', onClick: handleReset, icon: <RefreshCw size={14} /> },
+      ]}
       showTimeline={false}
-      extraControls={rbtControls}
       leftPanel={{
         title: "Source View",
         subtitle: "rbt.cpp",

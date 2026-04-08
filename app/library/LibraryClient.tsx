@@ -2,7 +2,9 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { AuthButton } from '@/components/AuthButton';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -28,10 +30,14 @@ const itemVariants = {
 
 interface LibraryClientProps {
   lessons: any[];
+  snippets?: any[];
 }
 
-export default function LibraryClient({ lessons }: LibraryClientProps) {
+export default function LibraryClient({ lessons, snippets = [] }: LibraryClientProps) {
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get('tab') as 'modules' | 'snippets' || 'modules';
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<'modules' | 'snippets'>(initialTab);
 
   const filteredLessons = lessons.filter(lesson => 
     lesson.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -39,8 +45,15 @@ export default function LibraryClient({ lessons }: LibraryClientProps) {
     lesson.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const filteredSnippets = snippets.filter(snippet => 
+    snippet.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    snippet.language.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   // Map database lessons to the UI structure
   const displayLessons = filteredLessons.map(lesson => ({
+    id: lesson.id,
+    slug: lesson.slug,
     title: lesson.title,
     desc: lesson.description || `Explore ${lesson.title} with interactive visualizations.`,
     complexity: lesson.difficulty === 'Beginner' ? 'O(n)' : 'O(log n)',
@@ -95,18 +108,38 @@ export default function LibraryClient({ lessons }: LibraryClientProps) {
           </div>
 
           <div className="mb-8">
-            <p className="px-4 text-sm font-black text-secondary uppercase tracking-[0.3em] mb-5 opacity-50">Categories</p>
-            {categories.map(cat => (
-              <button 
-                key={cat}
-                onClick={() => setSearchQuery(cat)}
-                className="w-full flex items-center gap-5 px-6 py-4 rounded-xl text-text-secondary hover:bg-surface-dark hover:text-white hover:translate-x-1 transition-all group text-left"
-              >
-                <span className="material-symbols-outlined text-xl group-hover:text-secondary transition-colors">folder</span>
-                <span className="text-lg font-bold tracking-tight">{cat}</span>
-              </button>
-            ))}
+            <p className="px-4 text-sm font-black text-secondary uppercase tracking-[0.3em] mb-5 opacity-50">Views</p>
+            <button 
+              onClick={() => setActiveTab('modules')}
+              className={`w-full flex items-center gap-5 px-6 py-4 rounded-xl transition-all group text-left ${activeTab === 'modules' ? 'bg-surface-dark text-white' : 'text-text-secondary hover:bg-surface-dark hover:text-white hover:translate-x-1'}`}
+            >
+              <span className={`material-symbols-outlined text-xl transition-colors ${activeTab === 'modules' ? 'text-primary' : 'group-hover:text-primary'}`}>view_module</span>
+              <span className="text-lg font-bold tracking-tight">Modules</span>
+            </button>
+            <button 
+              onClick={() => setActiveTab('snippets')}
+              className={`w-full flex items-center gap-5 px-6 py-4 rounded-xl transition-all group text-left ${activeTab === 'snippets' ? 'bg-surface-dark text-white' : 'text-text-secondary hover:bg-surface-dark hover:text-white hover:translate-x-1'}`}
+            >
+              <span className={`material-symbols-outlined text-xl transition-colors ${activeTab === 'snippets' ? 'text-secondary' : 'group-hover:text-secondary'}`}>code</span>
+              <span className="text-lg font-bold tracking-tight">Community Snippets</span>
+            </button>
           </div>
+
+          {activeTab === 'modules' && (
+            <div className="mb-8">
+              <p className="px-4 text-sm font-black text-secondary uppercase tracking-[0.3em] mb-5 opacity-50">Categories</p>
+              {categories.map(cat => (
+                <button 
+                  key={cat}
+                  onClick={() => setSearchQuery(cat)}
+                  className="w-full flex items-center gap-5 px-6 py-4 rounded-xl text-text-secondary hover:bg-surface-dark hover:text-white hover:translate-x-1 transition-all group text-left"
+                >
+                  <span className="material-symbols-outlined text-xl group-hover:text-secondary transition-colors">folder</span>
+                  <span className="text-lg font-bold tracking-tight">{cat}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </nav>
       </motion.aside>
 
@@ -130,10 +163,25 @@ export default function LibraryClient({ lessons }: LibraryClientProps) {
                 type="text" 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Find algorithm modules..." 
+                placeholder={activeTab === 'modules' ? "Find algorithm modules..." : "Search snippets..."} 
                 className="bg-black/40 border border-border-dark rounded-2xl pl-18 pr-8 py-6 text-2xl text-white focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all w-full font-black uppercase tracking-tight"
               />
             </div>
+          </div>
+          <div className="flex items-center gap-4 ml-4">
+            {activeTab === 'snippets' && (
+              <Link href="/snippets/new">
+                <motion.button 
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="bg-secondary/10 hover:bg-secondary/20 text-secondary border border-secondary/30 px-6 py-3 rounded-xl text-sm font-black uppercase tracking-widest transition-all flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-lg">add</span>
+                  New Snippet
+                </motion.button>
+              </Link>
+            )}
+            <AuthButton />
           </div>
         </header>
 
@@ -143,102 +191,166 @@ export default function LibraryClient({ lessons }: LibraryClientProps) {
           animate="visible"
           className="p-8 max-w-7xl mx-auto space-y-20"
         >
-          {/* Featured Hero */}
-          {featured && searchQuery === '' && (
-            <motion.div 
-              variants={itemVariants}
-              className="relative rounded-[4rem] overflow-hidden border-b-8 border-r-8 border-black/40 border border-border-dark bg-surface-darker p-16 group shadow-3xl"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-secondary/10 pointer-events-none"></div>
-              <div className="relative z-10 flex flex-col lg:flex-row items-center gap-16">
-                <div className="flex-1 space-y-8">
-                  <div className="flex items-center gap-4">
-                    <span className="px-4 py-1 bg-primary/20 text-primary text-xs font-black uppercase tracking-widest rounded-full border border-primary/30">Featured Module</span>
-                    <span className="w-2 h-2 rounded-full bg-accent-mint animate-pulse"></span>
-                  </div>
-                  <h2 className="text-7xl font-black text-white tracking-tighter uppercase italic leading-none">{featured.title}</h2>
-                  <p className="text-2xl text-text-secondary max-w-2xl leading-relaxed font-medium opacity-80 italic">"{featured.desc}"</p>
-                  <div className="flex items-center gap-8 pt-6">
-                    <Link href={featured.href}>
-                      <motion.button 
-                        whileHover={{ scale: 1.05, boxShadow: '0 0 30px rgba(127,19,236,0.4)' }}
-                        whileTap={{ scale: 0.95 }}
-                        className="px-12 py-6 bg-primary text-white font-black text-lg uppercase tracking-widest rounded-2xl shadow-2xl border-b-4 border-r-4 border-black/20"
-                      >
-                        Launch Simulation
-                      </motion.button>
-                    </Link>
-                    <div className="flex flex-col">
-                      <span className="text-xs font-black text-text-secondary uppercase tracking-widest">Complexity</span>
-                      <span className="text-2xl font-black text-primary font-mono italic">{featured.complexity}</span>
+          {activeTab === 'modules' ? (
+            <>
+              {/* Featured Hero */}
+              {featured && searchQuery === '' && (
+                <motion.div 
+                  variants={itemVariants}
+                  className="relative rounded-[4rem] overflow-hidden border-b-8 border-r-8 border-black/40 border border-border-dark bg-surface-darker p-16 group shadow-3xl"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-secondary/10 pointer-events-none"></div>
+                  <div className="relative z-10 flex flex-col lg:flex-row items-center gap-16">
+                    <div className="flex-1 space-y-8">
+                      <div className="flex items-center gap-4">
+                        <span className="px-4 py-1 bg-primary/20 text-primary text-xs font-black uppercase tracking-widest rounded-full border border-primary/30">Featured Module</span>
+                        <span className="w-2 h-2 rounded-full bg-accent-mint animate-pulse"></span>
+                      </div>
+                      <h2 className="text-7xl font-black text-white tracking-tighter uppercase italic leading-none">{featured.title}</h2>
+                      <p className="text-2xl text-text-secondary max-w-2xl leading-relaxed font-medium opacity-80 italic">"{featured.desc}"</p>
+                      <div className="flex items-center gap-8 pt-6">
+                        <Link href={featured.href}>
+                          <motion.button 
+                            whileHover={{ scale: 1.05, boxShadow: '0 0 30px rgba(127,19,236,0.4)' }}
+                            whileTap={{ scale: 0.95 }}
+                            className="px-12 py-6 bg-primary text-white font-black text-lg uppercase tracking-widest rounded-2xl shadow-2xl border-b-4 border-r-4 border-black/20"
+                          >
+                            Launch Simulation
+                          </motion.button>
+                        </Link>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-black text-text-secondary uppercase tracking-widest">Complexity</span>
+                          <span className="text-2xl font-black text-primary font-mono italic">{featured.complexity}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="w-full lg:w-96 h-96 bg-surface-dark rounded-[3rem] border border-white/10 flex items-center justify-center relative overflow-hidden group-hover:scale-105 transition-transform duration-700 shadow-inner">
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(127,19,236,0.2),transparent_70%)]"></div>
+                      <span className="material-symbols-outlined text-[180px] text-primary opacity-40 group-hover:opacity-100 transition-opacity group-hover:rotate-12 duration-700">{featured.icon}</span>
                     </div>
                   </div>
-                </div>
-                <div className="w-full lg:w-96 h-96 bg-surface-dark rounded-[3rem] border border-white/10 flex items-center justify-center relative overflow-hidden group-hover:scale-105 transition-transform duration-700 shadow-inner">
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(127,19,236,0.2),transparent_70%)]"></div>
-                  <span className="material-symbols-outlined text-[180px] text-primary opacity-40 group-hover:opacity-100 transition-opacity group-hover:rotate-12 duration-700">{featured.icon}</span>
-                </div>
-              </div>
-            </motion.div>
-          )}
+                </motion.div>
+              )}
 
-          {/* Categorized Grid */}
-          {categories.map(cat => {
-            const catLessons = displayLessons.filter(l => l.category === cat);
-            if (catLessons.length === 0) return null;
+              {/* Categorized Grid */}
+              {categories.map(cat => {
+                const catLessons = displayLessons.filter(l => l.category === cat);
+                if (catLessons.length === 0) return null;
 
-            return (
-              <div key={cat} className="space-y-12">
-                <div className="flex items-center gap-8">
-                  <h2 className="text-4xl font-black text-white uppercase tracking-tighter italic shrink-0">{cat}</h2>
-                  <div className="h-px bg-border-dark flex-1"></div>
-                  <span className="text-sm font-black text-text-secondary uppercase tracking-widest opacity-50">{catLessons.length} Modules</span>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
-                  {catLessons.map((item) => (
-                    <motion.div 
-                      key={item.title} 
-                      variants={itemVariants}
-                      whileHover={{ y: -12, scale: 1.02 }}
-                      className="group bg-surface-darker rounded-[2.5rem] border-b-8 border-r-8 border-black/40 border border-border-dark hover:border-white/20 transition-all flex flex-col overflow-hidden shadow-2xl"
-                    >
-                      <div className="h-56 w-full relative bg-surface-dark overflow-hidden flex items-center justify-center border-b border-border-dark">
-                        <div className={`absolute inset-0 bg-gradient-to-b from-${item.color}/10 to-transparent`}></div>
+                return (
+                  <div key={cat} className="space-y-12">
+                    <div className="flex items-center gap-8">
+                      <h2 className="text-4xl font-black text-white uppercase tracking-tighter italic shrink-0">{cat}</h2>
+                      <div className="h-px bg-border-dark flex-1"></div>
+                      <span className="text-sm font-black text-text-secondary uppercase tracking-widest opacity-50">{catLessons.length} Modules</span>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
+                      {catLessons.map((item) => (
                         <motion.div 
-                          whileHover={{ scale: 1.2, rotate: 5 }}
-                          className={`w-28 h-28 rounded-[2rem] bg-gradient-to-br from-${item.color} to-surface-dark flex items-center justify-center shadow-2xl relative z-10 border border-white/10`}
+                          key={item.id} 
+                          variants={itemVariants}
+                          whileHover={{ y: -12, scale: 1.02 }}
+                          className="group bg-surface-darker rounded-[2.5rem] border-b-8 border-r-8 border-black/40 border border-border-dark hover:border-white/20 transition-all flex flex-col overflow-hidden shadow-2xl"
                         >
-                          <span className="material-symbols-outlined text-6xl text-white">{item.icon}</span>
-                        </motion.div>
-                      </div>
-                      <div className="p-12 flex-1 flex flex-col">
-                        <div className="flex justify-between items-start mb-8">
-                          <span className="text-sm font-black text-text-secondary uppercase tracking-[0.2em]">{item.category}</span>
-                          <span className={`px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest bg-${item.color}/10 text-${item.color} border border-${item.color}/20 shadow-sm`}>
-                            {item.status}
-                          </span>
-                        </div>
-                        <h3 className="text-4xl font-black text-white mb-6 group-hover:text-primary transition-colors uppercase tracking-tighter italic leading-none">{item.title}</h3>
-                        <p className="text-text-secondary text-xl mb-12 leading-relaxed font-medium opacity-70 line-clamp-2 italic">"{item.desc}"</p>
-                        <div className="mt-auto grid grid-cols-2 gap-8 pt-10 border-t border-border-dark">
-                          <Link href={item.href} className="col-span-2">
-                            <motion.button 
-                              whileHover={{ scale: 1.02, boxShadow: `0 0 20px rgba(var(--${item.color}-rgb), 0.3)` }}
-                              whileTap={{ scale: 0.98 }}
-                              className={`w-full py-6 rounded-2xl bg-${item.color} text-white font-black text-sm uppercase tracking-[0.2em] hover:brightness-110 transition-all shadow-xl border-b-4 border-r-4 border-black/20`}
+                          <div className="h-56 w-full relative bg-surface-dark overflow-hidden flex items-center justify-center border-b border-border-dark">
+                            <div className={`absolute inset-0 bg-gradient-to-b from-${item.color}/10 to-transparent`}></div>
+                            <motion.div 
+                              whileHover={{ scale: 1.2, rotate: 5 }}
+                              className={`w-28 h-28 rounded-[2rem] bg-gradient-to-br from-${item.color} to-surface-dark flex items-center justify-center shadow-2xl relative z-10 border border-white/10`}
                             >
-                              Launch Module
-                            </motion.button>
+                              <span className="material-symbols-outlined text-6xl text-white">{item.icon}</span>
+                            </motion.div>
+                          </div>
+                          <div className="p-12 flex-1 flex flex-col">
+                            <div className="flex justify-between items-start mb-8">
+                              <span className="text-sm font-black text-text-secondary uppercase tracking-[0.2em]">{item.category}</span>
+                              <span className={`px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest bg-${item.color}/10 text-${item.color} border border-${item.color}/20 shadow-sm`}>
+                                {item.status}
+                              </span>
+                            </div>
+                            <h3 className="text-4xl font-black text-white mb-6 group-hover:text-primary transition-colors uppercase tracking-tighter italic leading-none">{item.title}</h3>
+                            <p className="text-text-secondary text-xl mb-12 leading-relaxed font-medium opacity-70 line-clamp-2 italic">"{item.desc}"</p>
+                            <div className="mt-auto grid grid-cols-2 gap-8 pt-10 border-t border-border-dark">
+                              <Link href={item.href} className="col-span-2">
+                                <motion.button 
+                                  whileHover={{ scale: 1.02, boxShadow: `0 0 20px rgba(var(--${item.color}-rgb), 0.3)` }}
+                                  whileTap={{ scale: 0.98 }}
+                                  className={`w-full py-6 rounded-2xl bg-${item.color} text-white font-black text-sm uppercase tracking-[0.2em] hover:brightness-110 transition-all shadow-xl border-b-4 border-r-4 border-black/20`}
+                                >
+                                  Launch Module
+                                </motion.button>
+                              </Link>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </>
+          ) : (
+            <div className="space-y-12">
+              <div className="flex items-center gap-8">
+                <h2 className="text-4xl font-black text-white uppercase tracking-tighter italic shrink-0">Community Snippets</h2>
+                <div className="h-px bg-border-dark flex-1"></div>
+                <span className="text-sm font-black text-text-secondary uppercase tracking-widest opacity-50">{filteredSnippets.length} Snippets</span>
+              </div>
+              
+              {filteredSnippets.length === 0 ? (
+                <div className="text-center py-20">
+                  <span className="material-symbols-outlined text-6xl text-text-secondary mb-4">code_off</span>
+                  <p className="text-xl text-text-secondary">No snippets found.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {filteredSnippets.map((snippet) => (
+                    <motion.div 
+                      key={snippet.id} 
+                      variants={itemVariants}
+                      whileHover={{ y: -8 }}
+                      className="bg-surface-darker rounded-3xl border border-border-dark p-8 flex flex-col shadow-xl"
+                    >
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                          {snippet.user?.image ? (
+                            <img src={snippet.user.image} alt={snippet.user.name || 'User'} className="w-10 h-10 rounded-full" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+                              {snippet.user?.name?.[0] || 'U'}
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-sm font-bold text-white">{snippet.user?.name || 'Anonymous'}</p>
+                            <p className="text-xs text-text-secondary">{new Date(snippet.createdAt).toLocaleDateString()}</p>
+                          </div>
+                        </div>
+                        <span className="px-3 py-1 bg-surface-dark text-text-secondary text-xs font-mono rounded-lg border border-border-dark">
+                          {snippet.language}
+                        </span>
+                      </div>
+                      
+                      <h3 className="text-2xl font-bold text-white mb-4">{snippet.title}</h3>
+                      
+                      <div className="flex-1 bg-black/50 rounded-xl p-4 overflow-hidden relative group">
+                        <pre className="text-xs font-mono text-gray-300 line-clamp-6">
+                          <code>{snippet.code}</code>
+                        </pre>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-4">
+                          <Link href={`/snippets/${snippet.id}`}>
+                            <button className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-lg shadow-lg hover:bg-primary/80 transition-colors">
+                              View Full Code
+                            </button>
                           </Link>
                         </div>
                       </div>
                     </motion.div>
                   ))}
                 </div>
-              </div>
-            );
-          })}
+              )}
+            </div>
+          )}
         </motion.div>
       </motion.main>
     </div>

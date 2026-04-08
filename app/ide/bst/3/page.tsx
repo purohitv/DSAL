@@ -120,6 +120,67 @@ class AVLTree {
     this.root = this.insertNode(this.root, value, path);
     return { path, root: this.root };
   }
+
+  getMinValueNode(node: AVLNode): AVLNode {
+    let current = node;
+    while (current.left) {
+      current = current.left;
+    }
+    return current;
+  }
+
+  deleteNode(root: AVLNode | null, value: number, path: AVLNode[]): AVLNode | null {
+    if (!root) return root;
+
+    path.push(root);
+
+    if (value < root.value) {
+      root.left = this.deleteNode(root.left, value, path);
+    } else if (value > root.value) {
+      root.right = this.deleteNode(root.right, value, path);
+    } else {
+      if (!root.left || !root.right) {
+        const temp = root.left ? root.left : root.right;
+        if (!temp) {
+          root = null;
+        } else {
+          root = temp;
+        }
+      } else {
+        const temp = this.getMinValueNode(root.right);
+        root.value = temp.value;
+        root.right = this.deleteNode(root.right, temp.value, path);
+      }
+    }
+
+    if (!root) return root;
+
+    root.height = Math.max(this.getHeight(root.left), this.getHeight(root.right)) + 1;
+    const balance = this.getBalance(root);
+
+    if (balance > 1 && this.getBalance(root.left) >= 0) {
+      return this.rightRotate(root);
+    }
+    if (balance > 1 && this.getBalance(root.left) < 0) {
+      root.left = this.leftRotate(root.left!);
+      return this.rightRotate(root);
+    }
+    if (balance < -1 && this.getBalance(root.right) <= 0) {
+      return this.leftRotate(root);
+    }
+    if (balance < -1 && this.getBalance(root.right) > 0) {
+      root.right = this.rightRotate(root.right!);
+      return this.leftRotate(root);
+    }
+
+    return root;
+  }
+
+  delete(value: number): { path: AVLNode[]; root: AVLNode | null } {
+    const path: AVLNode[] = [];
+    this.root = this.deleteNode(this.root, value, path);
+    return { path, root: this.root };
+  }
 }
 
 // --- Helper to convert AVL to React Flow Nodes/Edges ---
@@ -189,6 +250,8 @@ const generateFlowElements = (
 
 import IDELayout from "@/components/ide/Layout";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSimulationStore } from "@/store/useSimulationStore";
+import { Plus, RefreshCw, Minus, Search, Terminal, Layers } from 'lucide-react';
 
 export default function AVLVisualization() {
   const [avl] = useState(() => new AVLTree());
@@ -200,6 +263,29 @@ export default function AVLVisualization() {
   ]);
   const [callStack, setCallStack] = useState<string[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
+  const { setUserCode, setPlaygroundLanguage } = useSimulationStore();
+
+  useEffect(() => {
+    setUserCode(`struct Node {
+  int data;
+  int height;
+  Node *left, *right;
+  Node(int data) : data(data), height(1), left(NULL), right(NULL) {}
+};
+
+class AVLTree {
+  Node *root;
+  int height(Node *N);
+  int getBalance(Node *N);
+  Node *rightRotate(Node *y);
+  Node *leftRotate(Node *x);
+  Node *insert(Node *node, int key);
+public:
+  AVLTree() { root = NULL; }
+  void insert(int key) { root = insert(root, key); }
+};`);
+    setPlaygroundLanguage("cpp");
+  }, [setUserCode, setPlaygroundLanguage]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => setNodes((nds) => applyNodeChanges(changes, nds)),
@@ -222,6 +308,83 @@ export default function AVLVisualization() {
 
   const logTerminal = (msg: string) => {
     setTerminalOutput((prev) => [...prev, msg]);
+  };
+
+  const handleReset = () => {
+    setNodes([]);
+    setEdges([]);
+    setTerminalOutput(['> AVL Tree Reset. Ready for operations.']);
+    setCallStack([]);
+    setInputValue('');
+  };
+
+  const handleSearch = async () => {
+    const val = parseInt(inputValue);
+    if (isNaN(val)) return;
+    setInputValue("");
+    setIsPlaying(true);
+
+    logTerminal(`> Searching for value: ${val}`);
+    
+    let current = avl.root;
+    const currentPathIds: string[] = [];
+    let found = false;
+
+    while (current) {
+      currentPathIds.push(current.id);
+      updateFlow(current.id, currentPathIds);
+      logTerminal(`> Visiting node ${current.value}...`);
+      await new Promise((r) => setTimeout(r, 800));
+
+      if (val === current.value) {
+        found = true;
+        logTerminal(`> Found value ${val}!`);
+        break;
+      } else if (val < current.value) {
+        current = current.left;
+      } else {
+        current = current.right;
+      }
+    }
+
+    if (!found) {
+      logTerminal(`> Value ${val} not found in the tree.`);
+    }
+
+    updateFlow(null, []);
+    setIsPlaying(false);
+  };
+
+  const handleDelete = async () => {
+    const val = parseInt(inputValue);
+    if (isNaN(val)) return;
+    setInputValue("");
+    setIsPlaying(true);
+
+    logTerminal(`> Starting deletion for value: ${val}`);
+    const { path } = avl.delete(val);
+
+    const currentPathIds: string[] = [];
+    setCallStack(["delete(root, " + val + ")"]);
+
+    for (let i = 0; i < path.length; i++) {
+      const node = path[i];
+      currentPathIds.push(node.id);
+      updateFlow(node.id, currentPathIds);
+      
+      if (i === path.length - 1) {
+        logTerminal(`> Deleted ${val} (if existed). Checking balance...`);
+      } else {
+        logTerminal(`> Visiting node ${node.value}...`);
+      }
+      
+      await new Promise((r) => setTimeout(r, 800));
+    }
+
+    logTerminal(`> Tree rebalanced if necessary.`);
+    updateFlow(null, []);
+    setCallStack([]);
+    setIsPlaying(false);
   };
 
   const handleInsert = async () => {
@@ -288,9 +451,14 @@ export default function AVLVisualization() {
   return (
     <IDELayout
       title="AVL Tree"
-      category="Trees"
+      category="Intermediate"
+      operations={[
+        { name: 'Insert', onClick: handleInsert, icon: <Plus size={14} /> },
+        { name: 'Delete', onClick: handleDelete, icon: <Minus size={14} /> },
+        { name: 'Search', onClick: handleSearch, icon: <Search size={14} /> },
+        { name: 'Reset', onClick: handleReset, icon: <RefreshCw size={14} /> },
+      ]}
       showTimeline={false}
-      extraControls={avlControls}
       leftPanel={{
         title: "Source View",
         subtitle: "avl.cpp",

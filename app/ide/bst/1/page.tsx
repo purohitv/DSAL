@@ -153,6 +153,9 @@ const generateFlowElements = (
 
 import IDELayout from "@/components/ide/Layout";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSimulationStore } from "@/store/useSimulationStore";
+
+import { Plus, Minus, Square, Search, RefreshCw, Terminal, Layers } from 'lucide-react';
 
 export default function BSTVisualization() {
   const [bst, setBst] = useState(() => new BST());
@@ -165,10 +168,28 @@ export default function BSTVisualization() {
   const [callStack, setCallStack] = useState<string[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeLine, setActiveLine] = useState<number | null>(null);
+  const { setUserCode, setPlaygroundLanguage } = useSimulationStore();
 
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<any>(null);
   const decorationsRef = useRef<any[]>([]);
+
+  useEffect(() => {
+    setUserCode(`struct Node {
+  int data;
+  Node *left, *right;
+  Node(int data) : data(data), left(NULL), right(NULL) {}
+};
+
+class BST {
+  Node *root;
+public:
+  BST() { root = NULL; }
+  void insert(int key);
+  bool search(int key);
+};`);
+    setPlaygroundLanguage("cpp");
+  }, [setUserCode, setPlaygroundLanguage]);
 
   // Highlight active line in Monaco
   useEffect(() => {
@@ -357,9 +378,13 @@ export default function BSTVisualization() {
   return (
     <IDELayout
       title="Binary Search Tree"
-      category="Trees"
+      category="Basic"
+      operations={[
+        { name: 'Insert', onClick: handleInsert, icon: <Plus size={14} /> },
+        { name: 'Search', onClick: handleSearch, icon: <Search size={14} /> },
+        { name: 'Reset', onClick: handleReset, icon: <RefreshCw size={14} /> },
+      ]}
       showTimeline={false}
-      extraControls={bstControls}
       leftPanel={{
         title: "Source View",
         subtitle: "bst.cpp",

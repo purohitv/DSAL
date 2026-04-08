@@ -3,12 +3,16 @@ import { Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { ViewportWrapper } from "@/components/ViewportWrapper";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { NextAuthProvider } from "@/components/NextAuthProvider";
 
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
     title: "DSAL - Data Structure and Algorithm Laboratory",
     description: "Next-Gen Algorithm Visualization & Research Gateway",
+    icons: {
+        icon: "/logo.png",
+    },
 };
 
 export default function RootLayout({
@@ -44,11 +48,13 @@ export default function RootLayout({
                 />
             </head>
             <body className={`${spaceGrotesk.className} bg-background-dark text-white`}>
-                <ErrorBoundary>
-                    <ViewportWrapper>
-                        {children}
-                    </ViewportWrapper>
-                </ErrorBoundary>
+                <NextAuthProvider>
+                    <ErrorBoundary>
+                        <ViewportWrapper>
+                            {children}
+                        </ViewportWrapper>
+                    </ErrorBoundary>
+                </NextAuthProvider>
             </body>
         </html>
     );

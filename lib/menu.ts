@@ -3,10 +3,10 @@ export const CLASSIC_MENU = [
     name: "Learn",
     categories: [
       {
-        category: "Fundamental Data Structures",
+        category: "Basic",
         subcategories: [
           {
-            name: "Linear Structures",
+            name: "Linear",
             items: [
               { name: "Array", desc: "Contiguous memory, fixed/dynamic size", href: "/ide/linear?type=array" },
               { name: "Linked List", desc: "Singly, Doubly, Circular, Skip Lists", href: "/ide/linear?type=linked-list" },
@@ -15,7 +15,7 @@ export const CLASSIC_MENU = [
             ]
           },
           {
-            name: "Non-Linear Structures",
+            name: "Non-Linear",
             items: [
               { name: "Tree", desc: "Binary Trees and BST", href: "/ide/bst/1" },
               { name: "Graph", desc: "Adjacency Matrix and List", href: "/library" },
@@ -25,7 +25,7 @@ export const CLASSIC_MENU = [
         ]
       },
       {
-        category: "Intermediate Data Structures",
+        category: "Intermediate",
         items: [
           { name: "Self-Balancing Trees", desc: "AVL, Red-Black, Splay Trees", href: "/library" },
           { name: "Heap", desc: "Min-Heap, Max-Heap", href: "/library" },
@@ -34,7 +34,7 @@ export const CLASSIC_MENU = [
         ]
       },
       {
-        category: "Advanced & Specialized",
+        category: "Advanced",
         subcategories: [
           {
             name: "Advanced Trees",
@@ -93,7 +93,28 @@ export const CLASSIC_MENU = [
 ];
 
 export const QUANTUM_MENU = [
-  { name: "Quantum Search", desc: "Grover's Algorithm", href: "/ide/quantum" },
-  { name: "Quantum Fourier Transform", desc: "QFT Implementation", href: "/library" },
-  { name: "Shor's Algorithm", desc: "Integer Factorization", href: "/library" }
+  {
+    name: "Foundations",
+    items: [
+      { name: "Qubits & Superposition", desc: "The basic unit of quantum info", href: "/ide/quantum/qubits" },
+      { name: "Quantum Gates", desc: "H, X, Y, Z, CNOT gates", href: "/ide/quantum/gates" },
+      { name: "Bloch Sphere", desc: "Visualizing quantum states", href: "/ide/quantum/bloch-sphere" }
+    ]
+  },
+  {
+    name: "Algorithms",
+    items: [
+      { name: "Grover's Search", desc: "Quadratic speedup for search", href: "/ide/quantum/grovers-search" },
+      { name: "Quantum Fourier Transform", desc: "QFT Implementation", href: "/ide/quantum/qft" },
+      { name: "Shor's Algorithm", desc: "Integer Factorization", href: "/ide/quantum/shors" }
+    ]
+  },
+  {
+    name: "Advanced Paradigms",
+    items: [
+      { name: "Quantum Entanglement", desc: "Bell states and EPR pairs", href: "/ide/quantum/entanglement" },
+      { name: "Quantum Teleportation", desc: "Moving quantum states", href: "/ide/quantum/teleportation" },
+      { name: "Error Correction", desc: "Protecting quantum info", href: "/ide/quantum/error-correction" }
+    ]
+  }
 ];

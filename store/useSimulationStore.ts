@@ -1,5 +1,11 @@
 import { create } from 'zustand';
 
+export interface ComplexityDataPoint {
+  step: number;
+  operations: number;
+  memory: number;
+}
+
 interface SimulationState {
   currentStep: number;
   isPlaying: boolean;
@@ -8,6 +14,10 @@ interface SimulationState {
   callStack: string[];
   variables: Record<string, any>;
   activeLine: number | null;
+  complexityData: ComplexityDataPoint[];
+  steps: any[];
+  userCode: string;
+  playgroundLanguage: string;
   
   // Actions
   setCurrentStep: (step: number) => void;
@@ -18,6 +28,10 @@ interface SimulationState {
   setCallStack: (stack: string[]) => void;
   setVariables: (vars: Record<string, any>) => void;
   setActiveLine: (line: number | null) => void;
+  setComplexityData: (data: ComplexityDataPoint[]) => void;
+  setSteps: (steps: any[]) => void;
+  setUserCode: (code: string) => void;
+  setPlaygroundLanguage: (lang: string) => void;
   reset: () => void;
 }
 
@@ -29,6 +43,10 @@ export const useSimulationStore = create<SimulationState>((set) => ({
   callStack: [],
   variables: {},
   activeLine: null,
+  complexityData: [],
+  steps: [],
+  userCode: '',
+  playgroundLanguage: 'javascript',
 
   setCurrentStep: (step) => set({ currentStep: step }),
   setIsPlaying: (isPlaying) => set({ isPlaying }),
@@ -38,6 +56,10 @@ export const useSimulationStore = create<SimulationState>((set) => ({
   setCallStack: (stack) => set({ callStack: stack }),
   setVariables: (vars) => set({ variables: vars }),
   setActiveLine: (line) => set({ activeLine: line }),
+  setComplexityData: (data) => set({ complexityData: data }),
+  setSteps: (steps) => set({ steps }),
+  setUserCode: (code) => set({ userCode: code }),
+  setPlaygroundLanguage: (lang) => set({ playgroundLanguage: lang }),
   reset: () => set({
     currentStep: 1,
     isPlaying: false,
@@ -45,5 +67,9 @@ export const useSimulationStore = create<SimulationState>((set) => ({
     callStack: [],
     variables: {},
     activeLine: null,
+    complexityData: [],
+    steps: [],
+    userCode: '',
+    playgroundLanguage: 'javascript',
   }),
 }));

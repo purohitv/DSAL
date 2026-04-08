@@ -6,6 +6,8 @@ import Editor from "@monaco-editor/react";
 import IDELayout from "@/components/ide/Layout";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { useSimulationStore } from "@/store/useSimulationStore";
+import { Play, RefreshCw, Shuffle, Terminal, Layers } from 'lucide-react';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -160,6 +162,212 @@ const ALGORITHMS = {
 
       return newSteps;
     }
+  },
+  insertionSort: {
+    name: "Insertion Sort",
+    id: "insertion_sort.cpp",
+    code: `void insertionSort(int arr[], int n) {
+  for (int i = 1; i < n; i++) {
+    int key = arr[i];
+    int j = i - 1;
+    while (j >= 0 && arr[j] > key) {
+      arr[j + 1] = arr[j];
+      j = j - 1;
+    }
+    arr[j + 1] = key;
+  }
+}`,
+    complexity: "O(n²)",
+    generateSteps: (arr: number[]) => {
+      const newSteps: SortStep[] = [];
+      const a = [...arr];
+      let comparisons = 0;
+      let swaps = 0;
+      const n = a.length;
+
+      newSteps.push({
+        array: [...a],
+        comparing: [],
+        swapping: [],
+        sorted: [],
+        desc: "Initial state",
+        stats: { comparisons, swaps }
+      });
+
+      for (let i = 1; i < n; i++) {
+        let key = a[i];
+        let j = i - 1;
+        
+        newSteps.push({
+          array: [...a],
+          comparing: [i],
+          swapping: [],
+          sorted: Array.from({ length: i }, (_, k) => k),
+          desc: `Picking key: ${key}`,
+          stats: { comparisons, swaps }
+        });
+
+        while (j >= 0) {
+          comparisons++;
+          newSteps.push({
+            array: [...a],
+            comparing: [j],
+            swapping: [],
+            sorted: Array.from({ length: i }, (_, k) => k),
+            desc: `Comparing ${a[j]} with key ${key}`,
+            stats: { comparisons, swaps }
+          });
+
+          if (a[j] > key) {
+            swaps++;
+            a[j + 1] = a[j];
+            j = j - 1;
+            newSteps.push({
+              array: [...a],
+              comparing: [],
+              swapping: [j + 1, j + 2],
+              sorted: Array.from({ length: i }, (_, k) => k),
+              desc: `Shifting ${a[j + 2]} to the right`,
+              stats: { comparisons, swaps }
+            });
+          } else {
+            break;
+          }
+        }
+        a[j + 1] = key;
+        newSteps.push({
+          array: [...a],
+          comparing: [],
+          swapping: [j + 1],
+          sorted: Array.from({ length: i + 1 }, (_, k) => k),
+          desc: `Inserted key ${key} at position ${j + 1}`,
+          stats: { comparisons, swaps }
+        });
+      }
+
+      newSteps.push({
+        array: [...a],
+        comparing: [],
+        swapping: [],
+        sorted: Array.from({ length: n }, (_, k) => k),
+        desc: "Sorting completed",
+        stats: { comparisons, swaps }
+      });
+
+      return newSteps;
+    }
+  },
+  quickSort: {
+    name: "Quick Sort",
+    id: "quick_sort.cpp",
+    code: `void quickSort(int arr[], int low, int high) {
+  if (low < high) {
+    int pi = partition(arr, low, high);
+    quickSort(arr, low, pi - 1);
+    quickSort(arr, pi + 1, high);
+  }
+}
+
+int partition(int arr[], int low, int high) {
+  int pivot = arr[high];
+  int i = (low - 1);
+  for (int j = low; j <= high - 1; j++) {
+    if (arr[j] < pivot) {
+      i++;
+      swap(arr[i], arr[j]);
+    }
+  }
+  swap(arr[i + 1], arr[high]);
+  return (i + 1);
+}`,
+    complexity: "O(n log n)",
+    generateSteps: (arr: number[]) => {
+      const newSteps: SortStep[] = [];
+      const a = [...arr];
+      let comparisons = 0;
+      let swaps = 0;
+      const n = a.length;
+
+      newSteps.push({
+        array: [...a],
+        comparing: [],
+        swapping: [],
+        sorted: [],
+        desc: "Initial state",
+        stats: { comparisons, swaps }
+      });
+
+      const partition = (low: number, high: number) => {
+        let pivot = a[high];
+        newSteps.push({
+          array: [...a],
+          comparing: [high],
+          swapping: [],
+          sorted: [],
+          desc: `Pivot selected: ${pivot}`,
+          stats: { comparisons, swaps }
+        });
+
+        let i = low - 1;
+        for (let j = low; j <= high - 1; j++) {
+          comparisons++;
+          newSteps.push({
+            array: [...a],
+            comparing: [j, high],
+            swapping: [],
+            sorted: [],
+            desc: `Comparing ${a[j]} with pivot ${pivot}`,
+            stats: { comparisons, swaps }
+          });
+
+          if (a[j] < pivot) {
+            i++;
+            swaps++;
+            [a[i], a[j]] = [a[j], a[i]];
+            newSteps.push({
+              array: [...a],
+              comparing: [],
+              swapping: [i, j],
+              sorted: [],
+              desc: `Swapping ${a[i]} and ${a[j]}`,
+              stats: { comparisons, swaps }
+            });
+          }
+        }
+        swaps++;
+        [a[i + 1], a[high]] = [a[high], a[i + 1]];
+        newSteps.push({
+          array: [...a],
+          comparing: [],
+          swapping: [i + 1, high],
+          sorted: [],
+          desc: `Placing pivot at final position ${i + 1}`,
+          stats: { comparisons, swaps }
+        });
+        return i + 1;
+      };
+
+      const quickSortRecursive = (low: number, high: number) => {
+        if (low < high) {
+          let pi = partition(low, high);
+          quickSortRecursive(low, pi - 1);
+          quickSortRecursive(pi + 1, high);
+        }
+      };
+
+      quickSortRecursive(0, n - 1);
+
+      newSteps.push({
+        array: [...a],
+        comparing: [],
+        swapping: [],
+        sorted: Array.from({ length: n }, (_, k) => k),
+        desc: "Sorting completed",
+        stats: { comparisons, swaps }
+      });
+
+      return newSteps;
+    }
   }
 };
 
@@ -177,6 +385,12 @@ export default function ClassicAlgorithmLab() {
     "[System] Algorithm: Bubble Sort selected.",
     "[System] Ready for execution."
   ]);
+  const { setUserCode, setPlaygroundLanguage } = useSimulationStore();
+
+  useEffect(() => {
+    setUserCode(code);
+    setPlaygroundLanguage("cpp");
+  }, [code, setUserCode, setPlaygroundLanguage]);
 
   const handleCommand = (val: string) => {
     const parts = val.trim().split(/\s+/);
@@ -253,50 +467,16 @@ export default function ClassicAlgorithmLab() {
     stats: { comparisons: 0, swaps: 0 }
   };
 
-  const extraControls = (
-    <div className="flex items-center gap-4">
-      <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-3 py-1">
-        <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Size</span>
-        <input 
-          type="range" 
-          min="10" 
-          max="50" 
-          value={arraySize} 
-          onChange={(e) => setArraySize(parseInt(e.target.value))}
-          className="w-24 accent-primary"
-        />
-      </div>
-      <div className="flex items-center bg-neutral-900 rounded-lg p-1 border border-neutral-800">
-        {(Object.keys(ALGORITHMS) as Array<keyof typeof ALGORITHMS>).map((key) => (
-          <button
-            key={key}
-            onClick={() => setSelectedAlgo(key)}
-            className={cn(
-              "px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-widest transition-all",
-              selectedAlgo === key 
-                ? "bg-primary text-white shadow-neon-sm" 
-                : "text-neutral-500 hover:text-neutral-300"
-            )}
-          >
-            {ALGORITHMS[key].name}
-          </button>
-        ))}
-      </div>
-      <button 
-        onClick={generateArray}
-        className="p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
-      >
-        <span className="material-symbols-outlined text-base">refresh</span>
-      </button>
-    </div>
-  );
-
   return (
     <IDELayout
-      title="Classic Lab"
-      category="Research"
+      title="Research Lab"
+      category="Advanced"
+      operations={[
+        { name: 'Run Algorithm', onClick: () => setIsPlaying(true), icon: <Play size={14} /> },
+        { name: 'Reset', onClick: () => setCurrentStep(0), icon: <RefreshCw size={14} /> },
+        { name: 'Generate New', onClick: () => generateArray(), icon: <Shuffle size={14} /> },
+      ]}
       showTimeline={false}
-      extraControls={extraControls}
       isPlaying={isPlaying}
       onTogglePlayback={() => setIsPlaying(!isPlaying)}
       playbackSpeed={playbackSpeed}
@@ -425,7 +605,7 @@ export default function ClassicAlgorithmLab() {
             <div className="bg-[#282e39] rounded p-1.5 border border-[#3b4354]">
               <div className="text-[9px] font-medium text-slate-500 uppercase tracking-wider mb-0.5">Complexity</div>
               <div className="text-sm font-mono text-[#60a5fa]">
-                O(n²)
+                {ALGORITHMS[selectedAlgo].complexity}
               </div>
             </div>
           </div>

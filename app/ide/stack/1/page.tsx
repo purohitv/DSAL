@@ -6,6 +6,7 @@ import { Play, Square, ArrowRight, Terminal, Code, Layers, Database, Plus, Minus
 import Editor from '@monaco-editor/react';
 import IDELayout from '@/components/ide/Layout';
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+import { useSimulationStore } from "@/store/useSimulationStore";
 
 const MAX_STACK_SIZE = 6;
 
@@ -55,11 +56,17 @@ export default function StackVisualization() {
     const [callStack, setCallStack] = useState<any[]>([]);
     const [variables, setVariables] = useState<any[]>([]);
     const [isAnimating, setIsAnimating] = useState(false);
+    const { setUserCode, setPlaygroundLanguage } = useSimulationStore();
 
     const editorRef = useRef<any>(null);
     const monacoRef = useRef<any>(null);
     const decorationsRef = useRef<any[]>([]);
     const terminalEndRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        setUserCode(CODE_SNIPPET);
+        setPlaygroundLanguage("cpp");
+    }, [setUserCode, setPlaygroundLanguage]);
 
     // Auto-scroll terminal
     useEffect(() => {
@@ -379,9 +386,14 @@ export default function StackVisualization() {
 
     return (
         <IDELayout
-            title="Stack (Array)"
-            category="Data Structures"
-            extraControls={stackControls}
+            title="Stack"
+            category="Basic"
+            operations={[
+                { name: 'Push', onClick: handlePush, icon: <Plus size={14} /> },
+                { name: 'Pop', onClick: handlePop, icon: <Minus size={14} /> },
+                { name: 'Peek', onClick: handlePeek, icon: <Eye size={14} /> },
+                { name: 'Reset', onClick: handleReset, icon: <Square size={14} /> },
+            ]}
             leftPanel={{
                 title: "Source View",
                 subtitle: "stack.cpp",
