@@ -164,7 +164,6 @@ export default function IDELayout({
             </motion.div>
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5">
-                <img src="/dsal-logo.png" alt="DSAL Logo" className="w-5 h-5 object-contain" />
                 <h2 className="text-white text-sm font-black tracking-tighter italic uppercase leading-none group-hover:text-primary transition-colors glitch-hover">DSAL <span className="text-primary group-hover:text-white transition-colors">IDE</span></h2>
                 <AnimatePresence>
                   {isSaving && (

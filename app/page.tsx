@@ -44,7 +44,6 @@ export default function Home() {
                     <nav className="glass-panel !bg-panel-dark/95 rounded-full max-w-7xl mx-auto px-5 h-14 flex items-center justify-between shadow-lg shadow-primary/10 relative">
                         <Link href="/" className="flex items-center gap-3 cursor-pointer group">
                             <div className="relative">
-                                <img src="/dsal-logo.png" alt="DSAL Logo" className="w-8 h-8 object-contain group-hover:scale-110 transition-transform duration-500" />
                                 <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full animate-pulse" />
                             </div>
                             <span className="text-2xl font-black tracking-tighter text-white group-hover:text-primary transition-colors italic uppercase">DSAL</span>
