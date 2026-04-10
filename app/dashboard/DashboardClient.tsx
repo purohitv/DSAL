@@ -46,7 +46,7 @@ export default function DashboardClient({ user, snippets, stats, modules }: any)
               whileHover={{ rotate: 180 }}
               className="bg-gradient-to-br from-primary to-secondary p-3 rounded-2xl shadow-xl cursor-pointer"
             >
-              <img src="/logo.png" alt="DSAL Logo" className="w-6 h-6 object-contain" />
+              <img src="/dsal-logo.png" alt="DSAL Logo" className="w-6 h-6 object-contain" />
             </motion.div>
             <div className="flex flex-col">
               <h1 className="text-white text-2xl font-black leading-none tracking-tighter group-hover:text-primary transition-colors italic uppercase">DSAL</h1>

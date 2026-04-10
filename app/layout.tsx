@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     title: "DSAL - Data Structure and Algorithm Laboratory",
     description: "Next-Gen Algorithm Visualization & Research Gateway",
     icons: {
-        icon: "/logo.png",
+        icon: "/dsal-logo.png",
     },
 };
 
