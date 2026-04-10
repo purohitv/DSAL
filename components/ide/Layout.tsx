@@ -460,7 +460,8 @@ export default function IDELayout({
         {children ? children : (
           <main className="flex-1 flex overflow-hidden w-full">
             {/* Desktop View */}
-            <PanelGroup direction="horizontal" className="flex w-full h-full">
+            <PanelGroup autoSaveId="ide-main-layout" direction="horizontal" className="flex w-full h-full">
+
               {/* Left Sidebar */}
               {leftPanel && (
                 <>
@@ -477,7 +478,8 @@ export default function IDELayout({
               
               {/* Center Section */}
               <Panel defaultSize={leftPanel ? 50 : 75} minSize={30} className="flex flex-col relative bg-background-dark overflow-hidden">
-                <PanelGroup direction="vertical">
+                <PanelGroup id="ide-center-vertical" direction="vertical">
+
                   {centerPanel && (
                     <Panel defaultSize={bottomPanel && showBottomPanel ? 70 : 100} minSize={20} className="relative overflow-hidden">
                       <IDEPane {...centerPanel} className="border-none">
@@ -507,7 +509,8 @@ export default function IDELayout({
                     <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-white/10"></div>
                   </PanelResizeHandle>
                   <Panel defaultSize={25} minSize={15} className="bg-background-dark flex flex-col z-10 shadow-[-4px_0_24px_rgba(0,0,0,0.4)]">
-                    <PanelGroup direction="vertical">
+                    <PanelGroup id="ide-right-vertical" direction="vertical">
+
                       {rightPanelTop && (
                         <Panel defaultSize={rightPanelBottom ? 50 : 100} minSize={20} className="flex flex-col min-h-0">
                           <IDEPane {...rightPanelTop} className="border-b-2 border-border-dark">
