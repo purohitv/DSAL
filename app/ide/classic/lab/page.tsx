@@ -5,7 +5,6 @@ import IDELayout from "@/components/ide/Layout";
 import { motion, AnimatePresence } from "framer-motion";
 import Editor from "@monaco-editor/react";
 import { useSimulationStore } from "@/store/useSimulationStore";
-import { Plus, Minus, Eye, RefreshCw, Terminal, Layers } from 'lucide-react';
 
 export default function ClassicIDE() {
   const { setUserCode, setPlaygroundLanguage } = useSimulationStore();
@@ -27,10 +26,10 @@ export default function ClassicIDE() {
       title="Stack"
       category="Linear"
       operations={[
-        { name: 'Push', onClick: () => {}, icon: <Plus size={14} /> },
-        { name: 'Pop', onClick: () => {}, icon: <Minus size={14} /> },
-        { name: 'Peek', onClick: () => {}, icon: <Eye size={14} /> },
-        { name: 'Reset', onClick: () => {}, icon: <RefreshCw size={14} /> },
+        { name: 'Push', onClick: () => {} },
+        { name: 'Pop', onClick: () => {} },
+        { name: 'User Input', onClick: () => {} },
+        { name: 'All', onClick: () => {} },
       ]}
       showTimeline={true}
       currentStep={5}

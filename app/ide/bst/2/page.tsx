@@ -507,9 +507,12 @@ public:
         { name: 'Insert', onClick: handleInsert, icon: <Plus size={14} /> },
         { name: 'Delete', onClick: handleDelete, icon: <Minus size={14} /> },
         { name: 'Search', onClick: handleSearch, icon: <Search size={14} /> },
+        { name: 'User Input', onClick: () => {}, icon: <Terminal size={14} /> },
+        { name: 'All', onClick: () => {}, icon: <Layers size={14} /> },
         { name: 'Reset', onClick: handleReset, icon: <RefreshCw size={14} /> },
       ]}
       showTimeline={false}
+      extraControls={rbtControls}
       leftPanel={{
         title: "Source View",
         subtitle: "rbt.cpp",

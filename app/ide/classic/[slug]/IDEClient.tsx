@@ -13,7 +13,6 @@ import { useSimulationStore } from '@/store/useSimulationStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import ComplexityChart from '@/components/ide/ComplexityChart';
 import { useSession } from 'next-auth/react';
-import { Plus, Minus, Search, Play, RefreshCw, Save, Terminal, Layers, ArrowRight, Eye } from 'lucide-react';
 
 interface IDEClientProps {
   lesson: any;
@@ -479,62 +478,17 @@ export default function IDEClient({ lesson }: IDEClientProps) {
 
   const [activeBottomTab, setActiveBottomTab] = React.useState<'terminal' | 'input'>('terminal');
 
-  const getOperations = () => {
-    const baseOps = [
-      { name: 'Run Simulation', onClick: runCode, icon: <Play size={14} /> },
-      { name: 'Reset', onClick: reset, icon: <RefreshCw size={14} /> },
-      { name: 'Save Progress', onClick: () => saveProgress(userCode, currentStep), icon: <Save size={14} /> },
-      { name: 'User Input', onClick: () => {}, icon: <Terminal size={14} /> },
-      { name: 'All', onClick: () => {}, icon: <Layers size={14} /> },
-    ];
-
-    const type = lesson.visualizationType;
-
-    switch (type) {
-      case 'stack':
-        return [
-          { name: 'Push', onClick: () => {}, icon: <Plus size={14} /> },
-          { name: 'Pop', onClick: () => {}, icon: <Minus size={14} /> },
-          { name: 'Peek', onClick: () => {}, icon: <Eye size={14} /> },
-          ...baseOps
-        ];
-      case 'linear': // Array
-        return [
-          { name: 'Insert', onClick: () => {}, icon: <Plus size={14} /> },
-          { name: 'Delete', onClick: () => {}, icon: <Minus size={14} /> },
-          { name: 'Search', onClick: () => {}, icon: <Search size={14} /> },
-          ...baseOps
-        ];
-      case 'linked-list':
-        return [
-          { name: 'Insert Head', onClick: () => {}, icon: <Plus size={14} /> },
-          { name: 'Insert Tail', onClick: () => {}, icon: <Plus size={14} /> },
-          { name: 'Delete', onClick: () => {}, icon: <Minus size={14} /> },
-          ...baseOps
-        ];
-      case 'tree':
-        return [
-          { name: 'Insert', onClick: () => {}, icon: <Plus size={14} /> },
-          { name: 'Delete', onClick: () => {}, icon: <Minus size={14} /> },
-          { name: 'Search', onClick: () => {}, icon: <Search size={14} /> },
-          ...baseOps
-        ];
-      case 'graph':
-        return [
-          { name: 'Add Node', onClick: () => {}, icon: <Plus size={14} /> },
-          { name: 'Add Edge', onClick: () => {}, icon: <ArrowRight size={14} /> },
-          ...baseOps
-        ];
-      default:
-        return baseOps;
-    }
-  };
-
   return (
     <IDELayout
       title={lesson.title}
       category={lesson.category === 'Trees' ? 'Non-Linear' : lesson.category === 'Linear' ? 'Linear' : 'Advanced'}
-      operations={getOperations()}
+      operations={[
+        { name: 'Run Simulation', onClick: runCode, icon: <span className="material-symbols-outlined text-[12px]">play_arrow</span> },
+        { name: 'Reset', onClick: reset, icon: <span className="material-symbols-outlined text-[12px]">refresh</span> },
+        { name: 'Save Progress', onClick: () => saveProgress(userCode, currentStep), icon: <span className="material-symbols-outlined text-[12px]">save</span> },
+        { name: 'User Input', onClick: () => {}, icon: <span className="material-symbols-outlined text-[12px]">terminal</span> },
+        { name: 'All', onClick: () => {}, icon: <span className="material-symbols-outlined text-[12px]">layers</span> },
+      ]}
       currentStep={currentStep}
       totalSteps={totalSteps}
       isPlaying={isPlaying}
@@ -544,6 +498,152 @@ export default function IDEClient({ lesson }: IDEClientProps) {
       onTogglePlayback={handleTogglePlayback}
       onSetPlaybackSpeed={setPlaybackSpeed}
       isSaving={isSavingProgress}
+      extraControls={
+        <div className="flex items-center gap-1.5">
+          {/* Mode Selector */}
+          <div className="flex bg-surface-darker rounded-lg border border-border-dark p-0.5 mr-2">
+            <button
+              onClick={() => setMode('demo')}
+              className={`px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest transition-all ${
+                mode === 'demo' 
+                ? 'bg-primary text-white shadow-neon-sm' 
+                : 'text-text-secondary hover:text-white'
+              }`}
+            >
+              Demo Mode
+            </button>
+            <button
+              onClick={() => setMode('user')}
+              className={`px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest transition-all ${
+                mode === 'user' 
+                ? 'bg-accent-mint text-black shadow-neon-sm' 
+                : 'text-text-secondary hover:text-white'
+              }`}
+            >
+              User Input Mode
+            </button>
+          </div>
+
+          {mode === 'user' && (
+            <>
+              <div className="flex bg-surface-darker rounded border border-border-dark overflow-hidden">
+                <button
+                  onClick={() => setPlaygroundLanguage('javascript')}
+                  className={`px-2 py-1 text-[9px] font-black uppercase tracking-widest transition-colors ${
+                    playgroundLanguage === 'javascript' ? 'bg-primary/20 text-primary' : 'text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  JS
+                </button>
+                <button
+                  onClick={() => setPlaygroundLanguage('python')}
+                  className={`px-2 py-1 text-[9px] font-black uppercase tracking-widest transition-colors border-l border-border-dark ${
+                    playgroundLanguage === 'python' ? 'bg-blue-500/20 text-blue-400' : 'text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  PY
+                </button>
+                <button
+                  onClick={() => setPlaygroundLanguage('cpp')}
+                  className={`px-2 py-1 text-[9px] font-black uppercase tracking-widest transition-colors border-l border-border-dark ${
+                    playgroundLanguage === 'cpp' ? 'bg-pink-500/20 text-pink-400' : 'text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  C++
+                </button>
+                <button
+                  onClick={() => setPlaygroundLanguage('java')}
+                  className={`px-2 py-1 text-[9px] font-black uppercase tracking-widest transition-colors border-l border-border-dark ${
+                    playgroundLanguage === 'java' ? 'bg-orange-500/20 text-orange-400' : 'text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  JAVA
+                </button>
+              </div>
+              
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                whileHover={{ scale: 1.05, backgroundColor: 'rgba(127,19,236,0.2)' }}
+                whileTap={{ scale: 0.95 }}
+                onClick={runCode}
+                disabled={isCompiling}
+                className={`px-2 py-1 rounded border text-[9px] font-black uppercase tracking-widest flex items-center gap-1 transition-all ${
+                  isCompiling 
+                  ? 'bg-slate-800 text-slate-500 border-slate-700 cursor-not-allowed' 
+                  : 'bg-primary/10 text-primary border-primary/30 shadow-neon-sm'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[10px]">
+                  {isCompiling ? 'hourglass_empty' : 'play_circle'}
+                </span>
+                {isCompiling ? 'Compiling...' : 'Run Code'}
+              </motion.button>
+              
+              <div className="relative">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleSaveSnippet}
+                  disabled={isSaving}
+                  className="px-2 py-1 rounded border bg-green-500/10 text-green-400 border-green-500/30 text-[9px] font-black uppercase tracking-widest flex items-center gap-1 transition-all hover:bg-green-500/20"
+                >
+                  <span className="material-symbols-outlined text-[10px]">save</span>
+                  {isSaving ? 'Saving...' : 'Save'}
+                </motion.button>
+              </div>
+
+              <div className="relative">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleLoadSnippets}
+                  className="px-2 py-1 rounded border bg-blue-500/10 text-blue-400 border-blue-500/30 text-[9px] font-black uppercase tracking-widest flex items-center gap-1 transition-all hover:bg-blue-500/20"
+                >
+                  <span className="material-symbols-outlined text-[10px]">folder_open</span>
+                  Load
+                </motion.button>
+                <AnimatePresence>
+                  {showLoadMenu && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      className="absolute top-full right-0 mt-2 w-64 bg-background-dark border border-border-dark rounded-xl p-2 shadow-2xl z-[100] max-h-64 overflow-y-auto"
+                    >
+                      <h4 className="text-xs font-bold text-slate-300 mb-2 px-2">Saved Snippets</h4>
+                      {savedSnippets.length === 0 ? (
+                        <p className="text-[10px] text-slate-500 px-2">No saved snippets found.</p>
+                      ) : (
+                        <div className="space-y-1">
+                          {savedSnippets.map((snippet) => (
+                            <button
+                              key={snippet.id}
+                              onClick={() => {
+                                setUserCode(snippet.code);
+                                setPlaygroundLanguage(snippet.language as any);
+                                setShowLoadMenu(false);
+                                setMode('user');
+                              }}
+                              className="w-full text-left px-2 py-1.5 hover:bg-white/5 rounded flex flex-col gap-1"
+                            >
+                              <span className="text-[10px] text-white font-bold truncate">{snippet.title}</span>
+                              <div className="flex justify-between items-center">
+                                <span className="text-[8px] text-primary uppercase">{snippet.language}</span>
+                                <span className="text-[8px] text-slate-500">{new Date(snippet.createdAt).toLocaleDateString()}</span>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </>
+          )}
+        </div>
+      }
       leftPanel={{
         title: mode === 'user' ? "Playground Editor" : "Source View",
         subtitle: `${lesson.slug}.${mode === 'user' ? (playgroundLanguage === 'python' ? 'py' : playgroundLanguage === 'javascript' ? 'js' : playgroundLanguage) : (lesson.language === 'cpp' ? 'cpp' : 'js')}`,

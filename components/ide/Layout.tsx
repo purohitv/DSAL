@@ -33,6 +33,7 @@ interface IDELayoutProps {
   playbackSpeed?: number;
   onSetPlaybackSpeed?: (speed: number) => void;
   showTimeline?: boolean;
+  extraControls?: React.ReactNode;
   operations?: Operation[];
   // New props for standardized layout
   leftPanel?: {
@@ -118,6 +119,7 @@ export default function IDELayout({
   playbackSpeed = 1,
   onSetPlaybackSpeed,
   showTimeline = true,
+  extraControls,
   leftPanel,
   centerPanel,
   bottomPanel,
@@ -128,7 +130,9 @@ export default function IDELayout({
 }: IDELayoutProps) {
   const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
 
-  // Panel visibility state removed as toggles were removed
+  // Panel visibility state
+  const [showRightPanel, setShowRightPanel] = useState(true);
+  const [showBottomPanel, setShowBottomPanel] = useState(true);
 
   return (
     <div className="flex flex-col h-screen w-screen bg-background-dark text-white overflow-hidden font-display scanline">
@@ -292,6 +296,15 @@ export default function IDELayout({
                 </>
               )}
             </div>
+            {extraControls && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex items-center gap-1 border-l border-border-dark pl-1 ml-1"
+              >
+                {extraControls}
+              </motion.div>
+            )}
           </div>
 
           <nav className="hidden lg:flex items-center gap-3 ml-3 h-full">
@@ -383,6 +396,56 @@ export default function IDELayout({
             </div>
           )}
 
+          {/* Panel Toggles */}
+          <div className="flex items-center gap-0.5 bg-surface-darker p-0.5 rounded border border-border-dark mr-1">
+            {bottomPanel && (
+              <motion.button 
+                whileHover={{ scale: 1.1, backgroundColor: 'rgba(255,255,255,0.05)' }} 
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setShowBottomPanel(!showBottomPanel)}
+                title="Toggle Terminal Panel"
+                aria-label="Toggle Terminal Panel"
+                className={`transition-colors p-0.5 rounded flex items-center justify-center ${showBottomPanel ? 'text-primary bg-primary/10' : 'text-text-secondary hover:text-white'}`}
+              >
+                <span className="material-symbols-outlined text-xs">terminal</span>
+              </motion.button>
+            )}
+            {(rightPanelTop || rightPanelBottom) && (
+              <motion.button 
+                whileHover={{ scale: 1.1, backgroundColor: 'rgba(255,255,255,0.05)' }} 
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setShowRightPanel(!showRightPanel)}
+                title="Toggle Side Panel"
+                aria-label="Toggle Side Panel"
+                className={`transition-colors p-0.5 rounded flex items-center justify-center ${showRightPanel ? 'text-primary bg-primary/10' : 'text-text-secondary hover:text-white'}`}
+              >
+                <span className="material-symbols-outlined text-xs">right_panel_open</span>
+              </motion.button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-0.5 bg-surface-darker p-0.5 rounded border border-border-dark">
+            <motion.button 
+              whileHover={{ scale: 1.1, backgroundColor: 'rgba(255,255,255,0.05)' }} 
+              whileTap={{ scale: 0.9 }}
+              title="Settings"
+              aria-label="Settings"
+              className="text-text-secondary hover:text-white transition-colors p-0.5 rounded"
+            >
+              <span className="material-symbols-outlined text-xs">settings</span>
+            </motion.button>
+            <motion.button 
+              whileHover={{ scale: 1.1, backgroundColor: 'rgba(255,255,255,0.05)' }} 
+              whileTap={{ scale: 0.9 }}
+              title="Notifications"
+              aria-label="Notifications"
+              className="text-text-secondary hover:text-white transition-colors p-0.5 rounded relative"
+            >
+              <span className="material-symbols-outlined text-xs">notifications</span>
+              <span className="absolute top-0 right-0 size-1 bg-primary rounded-full shadow-[0_0_8px_rgba(127,19,236,0.8)] animate-pulse"></span>
+            </motion.button>
+          </div>
+
           <AuthButton />
         </div>
       </motion.header>
@@ -416,13 +479,13 @@ export default function IDELayout({
               <Panel defaultSize={leftPanel ? 50 : 75} minSize={30} className="flex flex-col relative bg-background-dark overflow-hidden">
                 <PanelGroup direction="vertical">
                   {centerPanel && (
-                    <Panel defaultSize={bottomPanel ? 70 : 100} minSize={20} className="relative overflow-hidden">
+                    <Panel defaultSize={bottomPanel && showBottomPanel ? 70 : 100} minSize={20} className="relative overflow-hidden">
                       <IDEPane {...centerPanel} className="border-none">
                         {centerPanel.content}
                       </IDEPane>
                     </Panel>
                   )}
-                  {bottomPanel && (
+                  {bottomPanel && showBottomPanel && (
                     <>
                       <PanelResizeHandle className="h-1.5 bg-border-dark hover:bg-primary/50 transition-colors cursor-row-resize relative z-20">
                         <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-px bg-white/10"></div>
@@ -438,7 +501,7 @@ export default function IDELayout({
               </Panel>
               
               {/* Right Sidebar */}
-              {(rightPanelTop || rightPanelBottom) && (
+              {(rightPanelTop || rightPanelBottom) && showRightPanel && (
                 <>
                   <PanelResizeHandle className="w-1.5 bg-border-dark hover:bg-primary/50 transition-colors cursor-col-resize relative z-20">
                     <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-white/10"></div>

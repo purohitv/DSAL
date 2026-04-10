@@ -7,7 +7,6 @@ import IDELayout from "@/components/ide/Layout";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useSimulationStore } from "@/store/useSimulationStore";
-import { Play, RefreshCw, Shuffle, Terminal, Layers } from 'lucide-react';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -467,16 +466,57 @@ export default function ClassicAlgorithmLab() {
     stats: { comparisons: 0, swaps: 0 }
   };
 
+  const extraControls = (
+    <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-3 py-1">
+        <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Size</span>
+        <input 
+          type="range" 
+          min="10" 
+          max="50" 
+          value={arraySize} 
+          onChange={(e) => setArraySize(parseInt(e.target.value))}
+          className="w-24 accent-primary"
+        />
+      </div>
+      <div className="flex items-center bg-neutral-900 rounded-lg p-1 border border-neutral-800">
+        {(Object.keys(ALGORITHMS) as Array<keyof typeof ALGORITHMS>).map((key) => (
+          <button
+            key={key}
+            onClick={() => setSelectedAlgo(key)}
+            className={cn(
+              "px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-widest transition-all",
+              selectedAlgo === key 
+                ? "bg-primary text-white shadow-neon-sm" 
+                : "text-neutral-500 hover:text-neutral-300"
+            )}
+          >
+            {ALGORITHMS[key].name}
+          </button>
+        ))}
+      </div>
+      <button 
+        onClick={generateArray}
+        className="p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
+      >
+        <span className="material-symbols-outlined text-base">refresh</span>
+      </button>
+    </div>
+  );
+
   return (
     <IDELayout
       title="Research Lab"
       category="Advanced"
       operations={[
-        { name: 'Run Algorithm', onClick: () => setIsPlaying(true), icon: <Play size={14} /> },
-        { name: 'Reset', onClick: () => setCurrentStep(0), icon: <RefreshCw size={14} /> },
-        { name: 'Generate New', onClick: () => generateArray(), icon: <Shuffle size={14} /> },
+        { name: 'Run Algorithm', onClick: () => setIsPlaying(true), icon: <span className="material-symbols-outlined text-[12px]">play_arrow</span> },
+        { name: 'Reset', onClick: () => setCurrentStep(0), icon: <span className="material-symbols-outlined text-[12px]">refresh</span> },
+        { name: 'Generate New', onClick: () => generateArray(), icon: <span className="material-symbols-outlined text-[12px]">shuffle</span> },
+        { name: 'User Input', onClick: () => {}, icon: <span className="material-symbols-outlined text-[12px]">terminal</span> },
+        { name: 'All', onClick: () => {}, icon: <span className="material-symbols-outlined text-[12px]">layers</span> },
       ]}
       showTimeline={false}
+      extraControls={extraControls}
       isPlaying={isPlaying}
       onTogglePlayback={() => setIsPlaying(!isPlaying)}
       playbackSpeed={playbackSpeed}

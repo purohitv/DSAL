@@ -4,7 +4,6 @@ import React, { useEffect } from "react";
 import IDELayout from '@/components/ide/Layout';
 import { Editor } from "@monaco-editor/react";
 import { useSimulationStore } from "@/store/useSimulationStore";
-import { Plus, Minus, Search, RefreshCw, Terminal, Layers } from 'lucide-react';
 
 export default function DsalAlgorithmIdeBstVisualization4() {
   const { setUserCode, setPlaygroundLanguage } = useSimulationStore();
@@ -33,10 +32,8 @@ Node* insert(Node* root, int val) {
       title="Binary Search Tree"
       category="Non-Linear"
       operations={[
-        { name: 'Insert', onClick: () => {}, icon: <Plus size={14} /> },
-        { name: 'Delete', onClick: () => {}, icon: <Minus size={14} /> },
-        { name: 'Search', onClick: () => {}, icon: <Search size={14} /> },
-        { name: 'Reset', onClick: () => {}, icon: <RefreshCw size={14} /> },
+        { name: 'User Input', onClick: () => {} },
+        { name: 'All', onClick: () => {} },
       ]}
       activeStep="Step 4/12"
       totalSteps={12}

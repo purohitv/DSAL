@@ -62,29 +62,35 @@ export default function LectureClient() {
         const lecturesData = await lecturesRes.json();
         const progressData = await progressRes.json();
         
-        setModules(lecturesData);
-        setCompletedLectureIds(progressData.completedLectureIds || []);
-        
-        const lessonIdParam = searchParams.get('id');
-        
-        if (lecturesData.length > 0) {
-          let foundLecture = null;
-          if (lessonIdParam) {
-            for (const mod of lecturesData) {
-              const lec = mod.lectures.find((l: Lecture) => l.lessonId === lessonIdParam || l.id === lessonIdParam);
-              if (lec) {
-                foundLecture = lec;
-                break;
+        if (Array.isArray(lecturesData)) {
+          setModules(lecturesData);
+          
+          const lessonIdParam = searchParams.get('id');
+          
+          if (lecturesData.length > 0) {
+            let foundLecture = null;
+            if (lessonIdParam) {
+              for (const mod of lecturesData) {
+                const lec = mod.lectures.find((l: Lecture) => l.lessonId === lessonIdParam || l.id === lessonIdParam);
+                if (lec) {
+                  foundLecture = lec;
+                  break;
+                }
               }
             }
+            
+            if (foundLecture) {
+              setSelectedLecture(foundLecture);
+            } else if (lecturesData[0].lectures && lecturesData[0].lectures.length > 0) {
+              setSelectedLecture(lecturesData[0].lectures[0]);
+            }
           }
-          
-          if (foundLecture) {
-            setSelectedLecture(foundLecture);
-          } else if (lecturesData[0].lectures.length > 0) {
-            setSelectedLecture(lecturesData[0].lectures[0]);
-          }
+        } else {
+          console.error("Lectures data is not an array:", lecturesData);
+          setModules([]);
         }
+        
+        setCompletedLectureIds(progressData.completedLectureIds || []);
       } catch (error) {
         console.error("Failed to fetch data:", error);
       } finally {
@@ -171,7 +177,7 @@ export default function LectureClient() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
-              {modules.map((module) => (
+              {Array.isArray(modules) && modules.map((module) => (
                 <div key={module.id} className="space-y-2">
                   <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] px-2">{module.title}</h3>
                   <div className="space-y-1">
