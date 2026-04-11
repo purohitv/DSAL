@@ -118,44 +118,44 @@ ${code}`,
       <motion.header 
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="flex items-center justify-between px-16 py-10 bg-background-dark/80 backdrop-blur-xl border-b border-border-dark shrink-0 z-30"
+        className="flex items-center justify-between px-8 py-4 bg-background-dark/80 backdrop-blur-xl border-b border-border-dark shrink-0 z-30"
       >
-        <div className="flex items-center gap-10">
+        <div className="flex items-center gap-4">
           <Link href="/" className="text-text-secondary hover:text-white transition-colors group">
             <motion.div 
               whileHover={{ x: -4 }}
-              className="flex items-center gap-4"
+              className="flex items-center gap-2"
             >
-              <span className="material-symbols-outlined text-4xl">arrow_back</span>
-              <span className="text-base font-black uppercase tracking-widest hidden sm:inline">Back</span>
+              <span className="material-symbols-outlined text-2xl">arrow_back</span>
+              <span className="text-xs font-black uppercase tracking-widest hidden sm:inline">Back</span>
             </motion.div>
           </Link>
-          <div className="h-12 w-px bg-border-dark mx-4"></div>
-          <div className="flex items-center gap-6">
+          <div className="h-8 w-px bg-border-dark mx-4"></div>
+          <div className="flex items-center gap-4">
             <motion.div 
               whileHover={{ rotate: 90 }}
-              className="bg-gradient-to-br from-primary to-secondary p-5 rounded-xl shadow-lg"
+              className="bg-gradient-to-br from-primary to-secondary p-3 rounded-lg shadow-lg"
             >
-              <span className="material-symbols-outlined text-white text-4xl">speed</span>
+              <span className="material-symbols-outlined text-white text-2xl">speed</span>
             </motion.div>
             <div>
-              <h1 className="text-4xl font-black tracking-tighter uppercase italic">Complexity Lab</h1>
-              <p className="text-base text-text-secondary font-mono uppercase tracking-widest mt-2">System Analysis Engine v4.2</p>
+              <h1 className="text-2xl font-black tracking-tighter uppercase italic">Complexity Lab</h1>
+              <p className="text-xs text-text-secondary font-mono uppercase tracking-widest mt-1">System Analysis Engine v4.2</p>
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-4">
           <motion.button 
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={handleAnalyze}
             disabled={isAnalyzing}
-            className="bg-primary hover:bg-primary-dark text-surface-darker font-black text-lg uppercase tracking-widest py-6 px-16 rounded-xl flex items-center gap-6 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 border-b-4 border-r-4 border-black/20"
+            className="bg-primary hover:bg-primary-dark text-surface-darker font-black text-sm uppercase tracking-widest py-3 px-8 rounded-lg flex items-center gap-3 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 border-b-2 border-r-2 border-black/20"
           >
             {isAnalyzing ? (
-              <span className="material-symbols-outlined animate-spin text-[32px]">sync</span>
+              <span className="material-symbols-outlined animate-spin text-[24px]">sync</span>
             ) : (
-              <span className="material-symbols-outlined text-[32px]">analytics</span>
+              <span className="material-symbols-outlined text-[24px]">analytics</span>
             )}
             {isAnalyzing ? 'Processing...' : 'Run Analysis'}
           </motion.button>
@@ -171,21 +171,21 @@ ${code}`,
           transition={{ delay: 0.2 }}
           className="w-1/2 flex flex-col border-r border-border-dark bg-surface-darker/50"
         >
-          <div className="px-12 py-6 bg-surface-darker border-b border-border-dark flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <span className="w-6 h-6 rounded-full bg-red-500/50"></span>
-              <span className="w-6 h-6 rounded-full bg-yellow-500/50"></span>
-              <span className="w-6 h-6 rounded-full bg-green-500/50"></span>
-              <span className="text-base font-mono text-text-secondary uppercase tracking-widest ml-6">algorithm.js</span>
+          <div className="px-6 py-4 bg-surface-darker border-b border-border-dark flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="w-3 h-3 rounded-full bg-red-500/50"></span>
+              <span className="w-3 h-3 rounded-full bg-yellow-500/50"></span>
+              <span className="w-3 h-3 rounded-full bg-green-500/50"></span>
+              <span className="text-xs font-mono text-text-secondary uppercase tracking-widest ml-4">algorithm.js</span>
             </div>
-            <span className="text-base bg-surface-dark px-6 py-3 rounded-lg text-primary font-black uppercase tracking-widest border border-primary/20">JavaScript</span>
+            <span className="text-xs bg-surface-dark px-3 py-1.5 rounded-md text-primary font-black uppercase tracking-widest border border-primary/20">JavaScript</span>
           </div>
           <div className="flex-1 relative group">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none"></div>
             <textarea
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              className="w-full h-full bg-transparent text-gray-300 font-mono text-2xl p-16 focus:outline-none resize-none leading-relaxed selection:bg-primary/30"
+              className="w-full h-full bg-transparent text-gray-300 font-mono text-sm p-6 focus:outline-none resize-none leading-relaxed selection:bg-primary/30"
               spellCheck={false}
             />
           </div>
@@ -214,50 +214,50 @@ ${code}`,
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
-                className="p-12 space-y-12"
+                className="p-6 space-y-6"
               >
                 {/* Big O Notation */}
-                <div className="grid grid-cols-2 gap-16">
+                <div className="grid grid-cols-2 gap-6">
                   <motion.div 
                     variants={itemVariants}
-                    whileHover={{ y: -10, scale: 1.02 }}
-                    className="bg-surface-darker border-b-8 border-r-8 border-black/40 border border-border-dark rounded-[3rem] p-20 relative overflow-hidden group hover:border-primary/50 transition-all shadow-2xl"
+                    whileHover={{ y: -5, scale: 1.02 }}
+                    className="bg-surface-darker border-b-4 border-r-4 border-black/40 border border-border-dark rounded-3xl p-6 relative overflow-hidden group hover:border-primary/50 transition-all shadow-xl"
                   >
-                    <div className="absolute -right-10 -top-10 opacity-[0.03] group-hover:opacity-[0.1] transition-all duration-700 group-hover:scale-110 group-hover:-rotate-12">
-                      <span className="material-symbols-outlined text-[300px] text-primary">schedule</span>
+                    <div className="absolute -right-5 -top-5 opacity-[0.03] group-hover:opacity-[0.1] transition-all duration-700 group-hover:scale-110 group-hover:-rotate-12">
+                      <span className="material-symbols-outlined text-[120px] text-primary">schedule</span>
                     </div>
-                    <div className="flex items-center justify-between mb-12">
-                      <h3 className="text-base font-black text-text-secondary uppercase tracking-[0.3em]">Time Complexity</h3>
-                      <span className="px-6 py-3 bg-primary/10 text-primary text-sm font-black uppercase tracking-widest rounded-lg border border-primary/20 shadow-lg">Runtime Audit</span>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-xs font-black text-text-secondary uppercase tracking-[0.3em]">Time Complexity</h3>
+                      <span className="px-3 py-1 bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest rounded border border-primary/20 shadow-sm">Runtime Audit</span>
                     </div>
-                    <div className="text-[10rem] font-black text-primary font-mono tracking-tighter italic drop-shadow-[0_10px_20px_rgba(127,19,236,0.3)]">{results.timeComplexity}</div>
-                    <p className="text-2xl text-text-secondary mt-14 font-medium leading-relaxed opacity-80 italic">{results.timeExplanation}</p>
+                    <div className="text-6xl font-black text-primary font-mono tracking-tighter italic drop-shadow-[0_5px_10px_rgba(127,19,236,0.3)]">{results.timeComplexity}</div>
+                    <p className="text-sm text-text-secondary mt-4 font-medium leading-relaxed opacity-80 italic">{results.timeExplanation}</p>
                   </motion.div>
                   
                   <motion.div 
                     variants={itemVariants}
-                    whileHover={{ y: -10, scale: 1.02 }}
-                    className="bg-surface-darker border-b-8 border-r-8 border-black/40 border border-border-dark rounded-[3rem] p-20 relative overflow-hidden group hover:border-secondary/50 transition-all shadow-2xl"
+                    whileHover={{ y: -5, scale: 1.02 }}
+                    className="bg-surface-darker border-b-4 border-r-4 border-black/40 border border-border-dark rounded-3xl p-6 relative overflow-hidden group hover:border-secondary/50 transition-all shadow-xl"
                   >
-                    <div className="absolute -right-10 -top-10 opacity-[0.03] group-hover:opacity-[0.1] transition-all duration-700 group-hover:scale-110 group-hover:-rotate-12">
-                      <span className="material-symbols-outlined text-[300px] text-secondary">memory</span>
+                    <div className="absolute -right-5 -top-5 opacity-[0.03] group-hover:opacity-[0.1] transition-all duration-700 group-hover:scale-110 group-hover:-rotate-12">
+                      <span className="material-symbols-outlined text-[120px] text-secondary">memory</span>
                     </div>
-                    <div className="flex items-center justify-between mb-12">
-                      <h3 className="text-base font-black text-text-secondary uppercase tracking-[0.3em]">Space Complexity</h3>
-                      <span className="px-6 py-3 bg-secondary/10 text-secondary text-sm font-black uppercase tracking-widest rounded-lg border border-secondary/20 shadow-lg">Memory Audit</span>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-xs font-black text-text-secondary uppercase tracking-[0.3em]">Space Complexity</h3>
+                      <span className="px-3 py-1 bg-secondary/10 text-secondary text-[10px] font-black uppercase tracking-widest rounded border border-secondary/20 shadow-sm">Memory Audit</span>
                     </div>
-                    <div className="text-[10rem] font-black text-secondary font-mono tracking-tighter italic drop-shadow-[0_10px_20px_rgba(217,19,236,0.3)]">{results.spaceComplexity}</div>
-                    <p className="text-2xl text-text-secondary mt-14 font-medium leading-relaxed opacity-80 italic">{results.spaceExplanation}</p>
+                    <div className="text-6xl font-black text-secondary font-mono tracking-tighter italic drop-shadow-[0_5px_10px_rgba(217,19,236,0.3)]">{results.spaceComplexity}</div>
+                    <p className="text-sm text-text-secondary mt-4 font-medium leading-relaxed opacity-80 italic">{results.spaceExplanation}</p>
                   </motion.div>
                 </div>
 
                 {/* Advanced Metrics */}
                 <motion.div variants={itemVariants}>
-                  <h3 className="text-lg font-black text-white mb-16 flex items-center gap-8 uppercase tracking-[0.4em]">
-                    <span className="w-5 h-5 rounded-full bg-accent-mint shadow-[0_0_10px_rgba(0,255,170,0.5)]"></span>
+                  <h3 className="text-sm font-black text-white mb-6 flex items-center gap-3 uppercase tracking-[0.4em]">
+                    <span className="w-3 h-3 rounded-full bg-accent-mint shadow-[0_0_10px_rgba(0,255,170,0.5)]"></span>
                     Advanced Metrics
                   </h3>
-                  <div className="grid grid-cols-3 gap-12">
+                  <div className="grid grid-cols-3 gap-4">
                     {[
                       { label: 'Cyclomatic', val: results.cyclomaticComplexity, color: 'text-white', icon: 'account_tree' },
                       { label: 'Halstead Diff', val: results.halstead.difficulty, color: 'text-white', icon: 'analytics' },
@@ -265,14 +265,14 @@ ${code}`,
                     ].map((m, i) => (
                       <motion.div 
                         key={i} 
-                        whileHover={{ y: -5, scale: 1.05 }}
-                        className="bg-surface-darker/50 border-b-4 border-r-4 border-black/20 border border-border-dark rounded-[2.5rem] p-16 hover:bg-surface-dark transition-all shadow-xl group"
+                        whileHover={{ y: -2, scale: 1.02 }}
+                        className="bg-surface-darker/50 border-b-2 border-r-2 border-black/20 border border-border-dark rounded-2xl p-6 hover:bg-surface-dark transition-all shadow-lg group"
                       >
-                        <div className="flex items-center justify-between mb-10">
-                          <div className="text-base text-text-secondary font-black uppercase tracking-widest">{m.label}</div>
-                          <span className={`material-symbols-outlined text-[32px] ${m.color} opacity-30 group-hover:opacity-100 transition-opacity`}>{m.icon}</span>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="text-xs text-text-secondary font-black uppercase tracking-widest">{m.label}</div>
+                          <span className={`material-symbols-outlined text-[20px] ${m.color} opacity-30 group-hover:opacity-100 transition-opacity`}>{m.icon}</span>
                         </div>
-                        <div className={`text-7xl font-black ${m.color} tracking-tighter italic`}>{m.val}</div>
+                        <div className={`text-4xl font-black ${m.color} tracking-tighter italic`}>{m.val}</div>
                       </motion.div>
                     ))}
                   </div>
@@ -280,26 +280,26 @@ ${code}`,
 
                 {/* Bottlenecks */}
                 <motion.div variants={itemVariants}>
-                  <h3 className="text-lg font-black text-white mb-16 flex items-center gap-8 uppercase tracking-[0.4em]">
-                    <span className="w-5 h-5 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"></span>
+                  <h3 className="text-sm font-black text-white mb-6 flex items-center gap-3 uppercase tracking-[0.4em]">
+                    <span className="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"></span>
                     System Bottlenecks
                   </h3>
-                  <div className="space-y-12">
+                  <div className="space-y-4">
                     {results.bottlenecks.map((b: any, i: number) => (
                       <motion.div 
                         key={i} 
-                        whileHover={{ x: 15, scale: 1.01 }}
-                        className="flex gap-16 bg-surface-darker/50 border-b-4 border-r-4 border-black/20 border border-red-500/20 rounded-[3rem] p-16 group hover:bg-red-500/5 transition-all shadow-xl"
+                        whileHover={{ x: 5, scale: 1.01 }}
+                        className="flex gap-6 bg-surface-darker/50 border-b-2 border-r-2 border-black/20 border border-red-500/20 rounded-3xl p-6 group hover:bg-red-500/5 transition-all shadow-md"
                       >
-                        <div className="w-32 h-32 rounded-2xl bg-red-500/10 flex items-center justify-center shrink-0 border border-red-500/20 shadow-inner group-hover:scale-110 transition-transform">
-                          <span className="text-red-400 font-mono font-black text-4xl">L{b.line}</span>
+                        <div className="w-16 h-16 rounded-xl bg-red-500/10 flex items-center justify-center shrink-0 border border-red-500/20 shadow-inner group-hover:scale-110 transition-transform">
+                          <span className="text-red-400 font-mono font-black text-base">L{b.line}</span>
                         </div>
                         <div className="flex-1">
-                          <div className="flex items-center justify-between mb-6">
-                            <span className="text-base font-black text-red-400/50 uppercase tracking-[0.2em]">Criticality: High</span>
-                            <span className="material-symbols-outlined text-red-500/30 group-hover:text-red-500 transition-all group-hover:rotate-12 text-4xl">warning</span>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-black text-red-400/50 uppercase tracking-[0.2em]">Criticality: High</span>
+                            <span className="material-symbols-outlined text-red-500/30 group-hover:text-red-500 transition-all group-hover:rotate-12 text-xl">warning</span>
                           </div>
-                          <p className="text-gray-300 text-3xl font-medium leading-relaxed italic">"{b.issue}"</p>
+                          <p className="text-gray-300 text-base font-medium leading-relaxed italic">"{b.issue}"</p>
                         </div>
                       </motion.div>
                     ))}
@@ -315,18 +315,18 @@ ${code}`,
                 exit={{ opacity: 0, scale: 1.1 }}
                 className="flex-1 flex flex-col items-center justify-center text-text-secondary p-10 text-center"
               >
-                <div className="w-32 h-32 rounded-3xl bg-surface-darker border-2 border-dashed border-border-dark flex items-center justify-center mb-8 relative group">
-                  <div className="absolute inset-0 bg-primary/5 rounded-3xl group-hover:scale-110 transition-transform"></div>
-                  <span className="material-symbols-outlined text-5xl opacity-30 group-hover:opacity-100 group-hover:text-primary transition-all">analytics</span>
+                <div className="w-20 h-20 rounded-2xl bg-surface-darker border-2 border-dashed border-border-dark flex items-center justify-center mb-4 relative group">
+                  <div className="absolute inset-0 bg-primary/5 rounded-2xl group-hover:scale-110 transition-transform"></div>
+                  <span className="material-symbols-outlined text-3xl opacity-30 group-hover:opacity-100 group-hover:text-primary transition-all">analytics</span>
                 </div>
-                <h2 className="text-2xl font-black text-white mb-4 uppercase tracking-tighter italic">Analysis Engine Standby</h2>
-                <p className="max-w-md text-sm font-medium leading-relaxed opacity-60">
+                <h2 className="text-lg font-black text-white mb-2 uppercase tracking-tighter italic">Analysis Engine Standby</h2>
+                <p className="max-w-md text-xs font-medium leading-relaxed opacity-60">
                   Inject your algorithm logic into the terminal on the left. The engine will perform a deep-trace complexity audit.
                 </p>
                 <motion.div 
-                  animate={{ y: [0, 10, 0] }}
+                  animate={{ y: [0, 5, 0] }}
                   transition={{ duration: 2, repeat: Infinity }}
-                  className="mt-10"
+                  className="mt-6"
                 >
                   <span className="material-symbols-outlined text-primary/50">keyboard_double_arrow_left</span>
                 </motion.div>
@@ -337,14 +337,14 @@ ${code}`,
       </main>
 
       {/* Footer Status Bar */}
-      <footer className="px-16 py-8 bg-surface-darker border-t border-border-dark flex items-center justify-between text-base font-black uppercase tracking-[0.2em] text-text-secondary">
-        <div className="flex items-center gap-16">
-          <div className="flex items-center gap-6">
-            <span className="w-4 h-4 rounded-full bg-green-500"></span>
+      <footer className="px-8 py-4 bg-surface-darker border-t border-border-dark flex items-center justify-between text-xs font-black uppercase tracking-[0.2em] text-text-secondary">
+        <div className="flex items-center gap-8">
+          <div className="flex items-center gap-3">
+            <span className="w-2 h-2 rounded-full bg-green-500"></span>
             <span>Engine: Online</span>
           </div>
-          <div className="flex items-center gap-6">
-            <span className="w-4 h-4 rounded-full bg-primary animate-pulse"></span>
+          <div className="flex items-center gap-3">
+            <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
             <span>Memory: 12.4GB / 32GB</span>
           </div>
         </div>
