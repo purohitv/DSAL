@@ -36,7 +36,7 @@ A **Stack** is a linear data structure that follows the **Last-In, First-Out (LI
 - Back button in web browsers.
 - Function calls and recursion (Call Stack).
             `,
-            videoUrl: 'https://www.youtube.com/embed/xli_Fi7CuzA',
+            videoUrl: 'https://www.youtube.com/embed/1j2gWyY5CK4',
             order: 1,
             quiz: {
               create: [
@@ -65,7 +65,7 @@ Stacks are incredibly efficient for specific tasks because their core operations
 
 When implemented using an array, a stack might occasionally need to resize (O(n)), but the *amortized* time complexity remains O(1).
             `,
-            videoUrl: 'https://www.youtube.com/embed/Hoixgm4-P4M',
+            videoUrl: 'https://www.youtube.com/embed/wjI1W2B7yII',
             order: 2,
             quiz: {
               create: [
@@ -109,7 +109,7 @@ A **Binary Search Tree** is a node-based binary tree data structure which has th
 
 In a balanced tree, h = log n.
             `,
-            videoUrl: 'https://www.youtube.com/embed/XB4MIexjvY0',
+            videoUrl: 'https://www.youtube.com/embed/opnKF5mEDTQ',
             order: 1,
             quiz: {
               create: [

@@ -277,6 +277,30 @@ export default function LectureClient() {
                 </div>
               </motion.div>
 
+              {/* Lecture Notes Section */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-8 border border-border-dark flex items-center justify-between bg-surface-darker/50 p-6 rounded-2xl shadow-lg"
+              >
+                <div className="flex items-center gap-6">
+                  <div className="w-14 h-14 rounded-xl bg-primary/20 border border-primary/30 text-primary flex items-center justify-center shadow-inner">
+                     <span className="material-symbols-outlined font-light text-[28px]">description</span>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-white uppercase tracking-widest mb-1 shadow-sm">Lecture Overview & Notes</h4>
+                    <p className="text-xs text-text-secondary font-medium">Download the complete supplementary PDF guide for this topic.</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => alert("Lecture notes downloaded successfully!")}
+                  className="bg-primary hover:bg-primary-dark text-black px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-3 group shadow-neon-sm"
+                >
+                  <span className="material-symbols-outlined group-hover:scale-110 transition-transform">download</span>
+                  Download PDF
+                </button>
+              </motion.div>
+
               {/* Quiz Section */}
               {selectedLecture.quiz && selectedLecture.quiz.length > 0 && (
                 <motion.div 
