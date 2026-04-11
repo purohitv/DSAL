@@ -91,10 +91,12 @@ export default function DashboardClient({ user, snippets, stats, modules }: any)
             <div className="space-y-2">
               {[
                 { name: 'Stack Data Structure', href: '/ide/stack/1', icon: 'layers', color: 'text-blue-400' },
-                { name: 'Binary Search Tree', href: '/ide/classic/bst-insertion', icon: 'account_tree', color: 'text-secondary' },
+                { name: 'Binary Search Tree', href: '/ide/bst/1', icon: 'account_tree', color: 'text-secondary' },
                 { name: 'Red-Black Tree', href: '/ide/bst/2', icon: 'park', color: 'text-accent-mint' },
                 { name: 'AVL Tree', href: '/ide/bst/3', icon: 'nature', color: 'text-indigo-400' },
                 { name: 'Quantum Search', href: '/ide/quantum/grovers-search', icon: 'vibration', color: 'text-pink-400' },
+                { name: 'Stack Lab (Experiment)', href: '/ide/classic/stack-experiment', icon: 'biotech', color: 'text-primary' },
+                { name: 'BST Lab (Experiment)', href: '/ide/classic/bst-experiment', icon: 'science', color: 'text-secondary' },
               ].map((item) => (
                 <Link key={item.href} className="flex items-center gap-4 px-5 py-3 rounded-2xl text-text-secondary hover:bg-surface-dark hover:text-white transition-all group border-2 border-transparent hover:border-white/10" href={item.href}>
                   <span className={`material-symbols-outlined text-[22px] ${item.color} opacity-70 group-hover:opacity-100 transition-opacity`}>{item.icon}</span>
@@ -320,7 +322,7 @@ export default function DashboardClient({ user, snippets, stats, modules }: any)
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {[
                     { name: 'Stack Data Structure', desc: 'LIFO logic', href: '/ide/stack/1', icon: 'layers', color: 'blue-400' },
-                    { name: 'Red-Black Tree', desc: 'Self-balancing logic', href: '/ide/bst/2', icon: 'park', color: 'accent-mint' },
+                    { name: 'BST Data Structure', desc: 'Hierarchical logic', href: '/ide/bst/1', icon: 'account_tree', color: 'secondary' },
                     { name: 'Complexity Lab', desc: 'Big O & Metrics', href: '/analysis', icon: 'query_stats', color: 'secondary' },
                     { name: 'Evolution Path', desc: 'Classical to Quantum', href: '/learning-path', icon: 'timeline', color: 'pink-500' },
                   ].map((item, i) => (
