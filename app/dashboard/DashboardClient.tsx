@@ -90,6 +90,7 @@ export default function DashboardClient({ user, snippets, stats, modules }: any)
             <p className="px-4 text-[11px] font-black text-secondary uppercase tracking-[0.3em] mb-4 opacity-40">Simulation Modules</p>
             <div className="space-y-2">
               {[
+                { name: 'Array Data Structure', href: '/ide/array/1', icon: 'view_column', color: 'text-amber-400' },
                 { name: 'Stack Data Structure', href: '/ide/stack/1', icon: 'layers', color: 'text-blue-400' },
                 { name: 'Binary Search Tree', href: '/ide/bst/1', icon: 'account_tree', color: 'text-secondary' },
                 { name: 'Red-Black Tree', href: '/ide/bst/2', icon: 'park', color: 'text-accent-mint' },
@@ -321,10 +322,10 @@ export default function DashboardClient({ user, snippets, stats, modules }: any)
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {[
+                    { name: 'Array Data Structure', desc: 'Contiguous memory, index access', href: '/ide/array/1', icon: 'view_column', color: 'amber-400' },
                     { name: 'Stack Data Structure', desc: 'LIFO logic', href: '/ide/stack/1', icon: 'layers', color: 'blue-400' },
                     { name: 'BST Data Structure', desc: 'Hierarchical logic', href: '/ide/bst/1', icon: 'account_tree', color: 'secondary' },
                     { name: 'Complexity Lab', desc: 'Big O & Metrics', href: '/analysis', icon: 'query_stats', color: 'secondary' },
-                    { name: 'Evolution Path', desc: 'Classical to Quantum', href: '/learning-path', icon: 'timeline', color: 'pink-500' },
                   ].map((item, i) => (
                     <motion.div key={i} variants={itemVariants}>
                       <Link href={item.href} className="group flex items-center gap-4 p-4 bg-surface-darker border border-border-dark rounded-2xl hover:border-white/20 transition-all hover:bg-surface-dark">
