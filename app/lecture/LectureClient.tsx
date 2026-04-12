@@ -177,9 +177,28 @@ export default function LectureClient() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
-              {Array.isArray(modules) && modules.map((module) => (
+              {Array.isArray(modules) && modules.map((module) => {
+                const completedCount = module.lectures.filter(l => completedLectureIds.includes(l.id)).length;
+                const totalCount = module.lectures.length;
+                const allDone = completedCount === totalCount && totalCount > 0;
+                return (
                 <div key={module.id} className="space-y-2">
-                  <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] px-2">{module.title}</h3>
+                  <div className="flex items-center justify-between px-2">
+                    <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">{module.title}</h3>
+                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${
+                      allDone ? 'bg-green-500/20 text-green-400' : 'bg-white/5 text-text-secondary'
+                    }`}>
+                      {completedCount}/{totalCount}
+                    </span>
+                  </div>
+                  {totalCount > 0 && (
+                    <div className="mx-2 h-1 rounded-full bg-white/5 overflow-hidden">
+                      <div 
+                        className="h-full rounded-full bg-primary transition-all duration-500"
+                        style={{ width: `${(completedCount / totalCount) * 100}%` }}
+                      />
+                    </div>
+                  )}
                   <div className="space-y-1">
                     {module.lectures.map((lecture) => (
                       <button
@@ -191,8 +210,12 @@ export default function LectureClient() {
                             : 'hover:bg-white/5 border border-transparent text-text-secondary hover:text-white'
                         }`}
                       >
-                        <div className={`size-6 rounded flex items-center justify-center text-[10px] font-bold relative ${
-                          selectedLecture?.id === lecture.id ? 'bg-primary text-white' : 'bg-surface-dark text-text-secondary group-hover:bg-white/10'
+                        <div className={`size-6 rounded flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                          completedLectureIds.includes(lecture.id)
+                            ? 'bg-green-500/20 text-green-400'
+                            : selectedLecture?.id === lecture.id
+                              ? 'bg-primary text-white'
+                              : 'bg-surface-dark text-text-secondary group-hover:bg-white/10'
                         }`}>
                           {completedLectureIds.includes(lecture.id) ? (
                             <span className="material-symbols-outlined text-[14px]">check</span>
@@ -205,7 +228,7 @@ export default function LectureClient() {
                     ))}
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
           </motion.aside>
         )}
@@ -292,13 +315,14 @@ export default function LectureClient() {
                     <p className="text-xs text-text-secondary font-medium">Download the complete supplementary PDF guide for this topic.</p>
                   </div>
                 </div>
-                <button
-                  onClick={() => alert("Lecture notes downloaded successfully!")}
+                <a
+                  href={`/notes/${selectedLecture.lessonId?.includes('stack') ? 'stack' : selectedLecture.lessonId?.includes('bst') ? 'bst' : 'dsal'}-notes.pdf`}
+                  download
                   className="bg-primary hover:bg-primary-dark text-black px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-3 group shadow-neon-sm"
                 >
                   <span className="material-symbols-outlined group-hover:scale-110 transition-transform">download</span>
                   Download PDF
-                </button>
+                </a>
               </motion.div>
 
               {/* Quiz Section */}
@@ -398,6 +422,30 @@ export default function LectureClient() {
                       </button>
                     </div>
                   )}
+
+                  {/* Go to Experiment CTA — shown after quiz submit */}
+                  {quizSubmitted && selectedLecture.lessonId && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 16 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="mt-10 p-8 rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/10 to-accent/5 flex flex-col sm:flex-row items-center gap-6"
+                    >
+                      <div className="w-16 h-16 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-primary text-3xl">terminal</span>
+                      </div>
+                      <div className="flex-1 text-center sm:text-left">
+                        <h4 className="text-base font-black text-white uppercase tracking-widest mb-1">Ready to Code It?</h4>
+                        <p className="text-sm text-text-secondary">Apply what you learned in the interactive IDE — step through real code and watch the visualizer come alive.</p>
+                      </div>
+                      <Link href={`/ide/classic/${selectedLecture.lessonId}`}>
+                        <button className="bg-primary hover:bg-primary/90 text-black px-8 py-3 rounded-xl font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-neon-sm whitespace-nowrap">
+                          <span className="material-symbols-outlined">play_arrow</span>
+                          Open Experiment
+                        </button>
+                      </Link>
+                    </motion.div>
+                  )}
                 </motion.div>
               )}
 
@@ -420,7 +468,7 @@ export default function LectureClient() {
                         {completedLectureIds.includes(selectedLecture.id) ? 'check_circle' : 'radio_button_unchecked'}
                       </span>
                     )}
-                    {completedLectureIds.includes(selectedLecture.id) ? 'Completed' : 'Mark as Complete'}
+                    {completedLectureIds.includes(selectedLecture.id) ? 'Completed ✓' : 'Mark as Complete'}
                   </button>
                 </div>
               )}
