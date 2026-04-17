@@ -568,7 +568,7 @@ export default function ComplexityAnalysisDashboard() {
           </div>
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[10px]">data_usage</span>
-            <span>Gemini 2.0 Flash</span>
+            <span>Gemini 1.5 Pro</span>
           </div>
         </div>
         <div className="flex items-center gap-4">
