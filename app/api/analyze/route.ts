@@ -1,9 +1,9 @@
 // app/api/analyze/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
 // Initialize Gemini AI with your API key
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,10 +15,6 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-
-    // Using stable Gemini 1.5 Pro model
-    // You can also use "gemini-1.5-flash" for faster responses
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
     const prompt = `You are a code complexity analysis expert. Analyze the following ${language} code and return a JSON object with EXACTLY this structure (no additional text, just the JSON):
 
@@ -47,26 +43,35 @@ export async function POST(req: NextRequest) {
 }
 
 Important rules:
-- timeComplexity and spaceComplexity must use Big O notation (e.g., O(1), O(n), O(n²), O(log n), O(n log n), O(2ⁿ))
-- cyclomaticComplexity should be a number (count of linearly independent paths)
-- cognitiveComplexity should be a number (how hard to understand)
-- maintainabilityIndex should be between 0-100 (higher is better)
+- Use proper Big O notation: O(1), O(n), O(n²), O(log n), O(n log n), O(2ⁿ), O(n!)
+- cyclomaticComplexity: count of independent paths (typically 1-20)
+- cognitiveComplexity: how hard to understand (typically 1-30)
+- maintainabilityIndex: 0-100 (higher is better)
 - For bottlenecks, estimate line numbers as best you can
-- Provide 2-4 practical optimization recommendations
+- Provide 2-4 practical, actionable recommendations
 
 Code to analyze:
 \`\`\`${language}
-${code}
+${code.substring(0, 3000)}
 \`\`\`
 
-Return ONLY the JSON object, no markdown formatting, no other text.`;
+Return ONLY the JSON object. No markdown formatting. No explanation. Just the JSON.`;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    // Generate content using the new SDK
+    const response = await genAI.models.generateContent({
+      model: 'gemini-1.5-pro', // Use stable model
+      contents: prompt,
+    });
+
+    const text = response.text;
+    
+    if (!text) {
+      throw new Error('No response from Gemini');
+    }
     
     // Clean the response text to ensure it's valid JSON
     let cleanText = text.trim();
+    
     // Remove markdown code blocks if present
     if (cleanText.startsWith('```json')) {
       cleanText = cleanText.replace(/```json\n?/, '').replace(/```\n?$/, '');
@@ -77,22 +82,22 @@ Return ONLY the JSON object, no markdown formatting, no other text.`;
     // Parse the JSON response
     const analysisResults = JSON.parse(cleanText);
     
-    // Validate required fields and provide defaults if needed
+    // Validate and provide defaults for required fields
     const validatedResults = {
       timeComplexity: analysisResults.timeComplexity || 'O(n)',
-      timeExplanation: analysisResults.timeExplanation || 'Analysis completed',
+      timeExplanation: analysisResults.timeExplanation || 'Analysis completed successfully',
       spaceComplexity: analysisResults.spaceComplexity || 'O(n)',
-      spaceExplanation: analysisResults.spaceExplanation || 'Analysis completed',
+      spaceExplanation: analysisResults.spaceExplanation || 'Analysis completed successfully',
       cyclomaticComplexity: analysisResults.cyclomaticComplexity || 1,
       halstead: {
         difficulty: analysisResults.halstead?.difficulty || 0,
         effort: analysisResults.halstead?.effort || 0,
         bugs: analysisResults.halstead?.bugs || 0,
       },
-      bottlenecks: analysisResults.bottlenecks || [],
+      bottlenecks: Array.isArray(analysisResults.bottlenecks) ? analysisResults.bottlenecks : [],
       cognitiveComplexity: analysisResults.cognitiveComplexity || 0,
       maintainabilityIndex: analysisResults.maintainabilityIndex || 50,
-      recommendations: analysisResults.recommendations || [],
+      recommendations: Array.isArray(analysisResults.recommendations) ? analysisResults.recommendations : [],
     };
     
     return NextResponse.json(validatedResults);
@@ -100,23 +105,23 @@ Return ONLY the JSON object, no markdown formatting, no other text.`;
   } catch (error: any) {
     console.error('Analysis error:', error);
     
-    // Handle specific API errors
-    if (error.message?.includes('404') || error.message?.includes('not found')) {
+    // Handle specific error types
+    if (error.message?.includes('API key')) {
       return NextResponse.json(
-        { error: 'Model not available. Please check your API key and model configuration.' },
+        { error: 'Invalid or missing Gemini API key. Please check your environment variables.' },
         { status: 500 }
       );
     }
     
-    if (error instanceof SyntaxError) {
+    if (error.message?.includes('404') || error.message?.includes('not found')) {
       return NextResponse.json(
-        { error: 'Failed to parse analysis results. Please try again.' },
+        { error: 'Gemini model not available. Please check your API key and model configuration.' },
         { status: 500 }
       );
     }
     
     return NextResponse.json(
-      { error: error.message || 'Failed to analyze code' },
+      { error: error.message || 'Failed to analyze code. Please try again.' },
       { status: 500 }
     );
   }
