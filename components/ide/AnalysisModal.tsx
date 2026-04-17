@@ -177,9 +177,9 @@ ${userCode.substring(0, 3000)}
 
 Provide the analysis in clear markdown format with emojis for visual appeal. Be specific, actionable, and educational.`;
 
-      // Use fetch API directly to avoid SDK issues
+      // Using Gemini 3.1 Flash Preview - Updated April 2026
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-preview:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: {
@@ -321,7 +321,7 @@ Provide the analysis in clear markdown format with emojis for visual appeal. Be 
                     <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }} className="w-16 h-16 border-2 border-primary/30 border-t-primary rounded-full" />
                     <div className="text-center">
                       <p className="text-sm font-bold text-white uppercase tracking-widest animate-pulse">Analyzing Code...</p>
-                      <p className="text-[10px] text-text-secondary mt-1">Using Gemini 1.5 Flash AI</p>
+                      <p className="text-[10px] text-text-secondary mt-1">Using Gemini 3.1 Flash AI</p>
                     </div>
                   </div>
                 ) : (
@@ -359,7 +359,7 @@ Provide the analysis in clear markdown format with emojis for visual appeal. Be 
                   <span>{getCodeStats()?.functions || 0} functions</span>
                   <span>{getCodeStats()?.loops || 0} loops</span>
                 </div>
-                <div>Powered by Gemini 1.5 Flash</div>
+                <div>Powered by Gemini 3.1 Flash</div>
               </div>
             )}
           </motion.div>
