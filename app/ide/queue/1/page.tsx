@@ -105,7 +105,7 @@ export default function QueueVisualization() {
         setInputValue("");
 
         setActiveLine(9);
-        setCallStack([{ id: 'enqueue', name: \`enqueue(\${val})\`, line: 9 }]);
+        setCallStack([{ id: 'enqueue', name: `enqueue(${val})`, line: 9 }]);
         setVariables([{ name: 'val', value: val, type: 'int' }, { name: 'front', value: front, type: 'int' }, { name: 'rear', value: rear, type: 'int' }]);
         await sleep(600);
 
@@ -141,7 +141,7 @@ export default function QueueVisualization() {
             await sleep(600);
 
             setActiveLine(16);
-            setTerminal(prev => [...prev, { text: \`Enqueued \${val}\`, type: "success" }]);
+            setTerminal(prev => [...prev, { text: `Enqueued ${val}`, type: "success" }]);
             await sleep(600);
         }
 
@@ -156,7 +156,7 @@ export default function QueueVisualization() {
         setIsAnimating(true);
 
         setActiveLine(19);
-        setCallStack([{ id: 'dequeue', name: \`dequeue()\`, line: 19 }]);
+        setCallStack([{ id: 'dequeue', name: `dequeue()`, line: 19 }]);
         setVariables([{ name: 'front', value: front, type: 'int' }, { name: 'rear', value: rear, type: 'int' }]);
         await sleep(600);
 
@@ -185,7 +185,7 @@ export default function QueueVisualization() {
             await sleep(600);
 
             setActiveLine(25);
-            setTerminal(prev => [...prev, { text: \`Dequeued \${val}\`, type: "success" }]);
+            setTerminal(prev => [...prev, { text: `Dequeued ${val}`, type: "success" }]);
             await sleep(600);
 
             setActiveLine(26);
@@ -203,7 +203,7 @@ export default function QueueVisualization() {
         setIsAnimating(true);
 
         setActiveLine(29);
-        setCallStack([{ id: 'peek', name: \`peek()\`, line: 29 }]);
+        setCallStack([{ id: 'peek', name: `peek()`, line: 29 }]);
         setVariables([{ name: 'front', value: front, type: 'int' }, { name: 'rear', value: rear, type: 'int' }]);
         await sleep(600);
 
@@ -218,7 +218,7 @@ export default function QueueVisualization() {
             await sleep(600);
         } else {
             setActiveLine(34);
-            setTerminal(prev => [...prev, { text: \`Front is \${queue[front]}\`, type: "info" }]);
+            setTerminal(prev => [...prev, { text: `Front is ${queue[front]}`, type: "info" }]);
             await sleep(600);
         }
 
@@ -287,11 +287,11 @@ export default function QueueVisualization() {
 
     const codePanel = (
         <div className="flex-1 overflow-hidden bg-[#0d1117] h-full">
-            <style>{\`
-                .bg-blue-500\\\\/30 {
+            <style>{`
+                .bg-blue-500\\/30 {
                     background-color: rgba(59, 130, 246, 0.3) !important;
                 }
-            \`}</style>
+            `}</style>
             <Editor
                 height="100%"
                 defaultLanguage="cpp"
@@ -342,14 +342,14 @@ export default function QueueVisualization() {
                                         const isActive = queue[i] !== null;
                                         return (
                                             <div key={i} className="flex flex-col items-center">
-                                                <div className={\`h-4 flex items-end justify-center text-[9px] font-mono mb-1 \${i === front || i === rear ? 'text-white font-bold' : 'text-gray-500'}\`}>{i}</div>
+                                                <div className={`h-4 flex items-end justify-center text-[9px] font-mono mb-1 ${i === front || i === rear ? 'text-white font-bold' : 'text-gray-500'}`}>{i}</div>
                                                 <motion.div 
                                                     layout
-                                                    className={\`w-16 h-16 border rounded flex items-center justify-center font-mono text-xl shadow-sm transition-colors duration-300 mx-0.5 \${
+                                                    className={`w-16 h-16 border rounded flex items-center justify-center font-mono text-xl shadow-sm transition-colors duration-300 mx-0.5 ${
                                                         isActive 
                                                             ? 'bg-primary text-white border-white/20 font-bold shadow-[0_0_10px_rgba(127,19,236,0.3)] z-10' 
                                                             : 'bg-[#1c212c] text-white border-[#3b4354] border-dashed text-[12px]'
-                                                    }\`}
+                                                    }`}
                                                 >
                                                     <AnimatePresence mode="wait">
                                                         {queue[i] !== null ? (
@@ -377,7 +377,7 @@ export default function QueueVisualization() {
                                     <motion.div 
                                         layoutId="frontPointer"
                                         className="absolute -bottom-2 flex flex-col items-center transition-all duration-300 z-20"
-                                        style={{ left: \`\${(front * 68) + 38}px\` }}
+                                        style={{ left: `${(front * 68) + 38}px` }}
                                     >
                                         <span className="material-symbols-outlined text-green-500 -rotate-90">arrow_right_alt</span>
                                         <span className="bg-green-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-lg uppercase tracking-wider mt-1">Front</span>
@@ -389,7 +389,7 @@ export default function QueueVisualization() {
                                     <motion.div 
                                         layoutId="rearPointer"
                                         className="absolute -top-2 flex flex-col items-center transition-all duration-300 z-20"
-                                        style={{ left: \`\${(rear * 68) + 38}px\` }}
+                                        style={{ left: `${(rear * 68) + 38}px` }}
                                     >
                                         <span className="bg-blue-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-lg uppercase tracking-wider mb-1">Rear</span>
                                         <span className="material-symbols-outlined text-blue-500 rotate-90">arrow_right_alt</span>
@@ -443,10 +443,10 @@ export default function QueueVisualization() {
                                         key={i}
                                         initial={{ opacity: 0, x: -5 }}
                                         animate={{ opacity: 1, x: 0 }}
-                                        className={\`flex gap-1.5 \${
+                                        className={`flex gap-1.5 ${
                                             log.type === 'error' ? 'text-red-400' : 
                                             log.type === 'success' ? 'text-green-400 opacity-60' : 'text-gray-300 opacity-60'
-                                        }\`}
+                                        }`}
                                     >
                                         <span className={log.type === 'error' ? 'text-red-500' : log.type === 'success' ? 'text-green-500' : 'text-blue-500'}>
                                             {log.type === 'error' ? '✖' : log.type === 'success' ? '✔' : '➜'}
@@ -469,7 +469,7 @@ export default function QueueVisualization() {
                                         const input = e.currentTarget;
                                         const val = input.value;
                                         if (val) {
-                                            const parts = val.trim().split(/\\s+/);
+                                            const parts = val.trim().split(/\s+/);
                                             const cmd = parts[0].toLowerCase();
                                             if ((cmd === 'enqueue' || cmd === 'enq') && parts[1]) {
                                                 setInputValue(parts[1]);
@@ -479,7 +479,7 @@ export default function QueueVisualization() {
                                             } else if (cmd === 'peek') {
                                                 handlePeek();
                                             } else {
-                                                setTerminal(prev => [...prev, { text: \`Command not found: \${cmd}\`, type: 'error' }]);
+                                                setTerminal(prev => [...prev, { text: `Command not found: ${cmd}`, type: 'error' }]);
                                             }
                                             input.value = '';
                                         }
@@ -507,15 +507,15 @@ export default function QueueVisualization() {
                                         initial={{ opacity: 0, y: -10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, scale: 0.95 }}
-                                        className={\`group flex items-center justify-between p-1.5 rounded transition-colors \${
+                                        className={`group flex items-center justify-between p-1.5 rounded transition-colors ${
                                             i === 0 
                                             ? 'bg-[#282e39] border-l-2 border-primary rounded-r shadow-sm cursor-pointer hover:bg-[#323945]' 
                                             : 'border border-transparent hover:bg-[#282e39]/50 opacity-60'
-                                        }\`}
+                                        }`}
                                     >
                                         <div className="flex flex-col">
-                                            <span className={\`font-mono text-[10px] \${i === 0 ? 'text-white font-medium' : 'text-gray-300'}\`}>{frame.name}</span>
-                                            <span className={\`text-[9px] \${i === 0 ? 'text-[#9da6b9]' : 'text-gray-400'}\`}>Line {frame.line}</span>
+                                            <span className={`font-mono text-[10px] ${i === 0 ? 'text-white font-medium' : 'text-gray-300'}`}>{frame.name}</span>
+                                            <span className={`text-[9px] ${i === 0 ? 'text-[#9da6b9]' : 'text-gray-400'}`}>Line {frame.line}</span>
                                         </div>
                                         {i === 0 && <span className="material-symbols-outlined text-primary opacity-0 group-hover:opacity-100 text-[10px]">arrow_back</span>}
                                     </motion.div>
