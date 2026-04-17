@@ -1,7 +1,7 @@
 // components/ide/Layout.tsx
 'use client';
 
-import React, { useState, useEffect, ReactNode, memo, useCallback, useMemo, lazy, Suspense } from 'react';
+import React, { useState, useEffect, ReactNode, memo, useMemo, Suspense, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
@@ -10,24 +10,7 @@ import dynamic from 'next/dynamic';
 import { CLASSIC_MENU, QUANTUM_MENU } from '@/lib/menu';
 import { AuthButton } from '@/components/AuthButton';
 
-// Lazy load AnalysisModal for better performance
-const AnalysisModal = dynamic(
-  () => import('@/components/ide/AnalysisModal'),
-  { 
-    ssr: false,
-    loading: () => (
-      <div className="fixed inset-0 bg-black/80 backdrop-blur-xl flex items-center justify-center z-[10000]">
-        <div className="relative">
-          <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-primary border-b-2 border-secondary"></div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="material-symbols-outlined text-3xl text-white animate-pulse">code</span>
-          </div>
-        </div>
-      </div>
-    )
-  }
-);
-
+// Types
 export interface Operation {
   name: string;
   onClick: () => void | Promise<void>;
@@ -68,7 +51,150 @@ interface IDELayoutProps {
   isSaving?: boolean;
 }
 
-// Memoized IDEPane component
+// Lazy load AnalysisModal for better performance
+const AnalysisModal = dynamic(
+  () => import('@/components/ide/AnalysisModal'),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-xl flex items-center justify-center z-[10000]">
+        <div className="relative">
+          <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-primary border-b-2 border-secondary"></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="material-symbols-outlined text-3xl text-white animate-pulse">code</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+);
+
+// Utility functions
+const debounce = (fn: Function, ms: number) => {
+  let timeoutId: NodeJS.Timeout;
+  return function (...args: any[]) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => fn(...args), ms);
+  };
+};
+
+// Custom hooks
+const useKeyboardShortcuts = (
+  onPrev?: () => void | Promise<void>,
+  onNext?: () => void | Promise<void>,
+  onTogglePlayback?: () => void | Promise<void>,
+  onSetPlaybackSpeed?: (speed: number) => void | Promise<void>,
+  setShowRightPanel?: (show: boolean) => void,
+  setShowBottomPanel?: (show: boolean) => void,
+  showRightPanel?: boolean,
+  showBottomPanel?: boolean,
+  setIsFullscreen?: (isFullscreen: boolean) => void,
+  isFullscreen?: boolean
+) => {
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      // Ctrl/Cmd + B: Toggle right panel
+      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+        e.preventDefault();
+        setShowRightPanel?.(!showRightPanel);
+      }
+      
+      // Ctrl/Cmd + J: Toggle bottom panel
+      if ((e.ctrlKey || e.metaKey) && e.key === 'j') {
+        e.preventDefault();
+        setShowBottomPanel?.(!showBottomPanel);
+      }
+      
+      // Ctrl/Cmd + Shift + F: Toggle fullscreen
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'F') {
+        e.preventDefault();
+        setIsFullscreen?.(!isFullscreen);
+      }
+      
+      // Escape: Exit fullscreen
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen?.(false);
+      }
+      
+      // Space: Play/Pause
+      if (e.key === ' ' || e.key === 'Space') {
+        e.preventDefault();
+        onTogglePlayback?.();
+      }
+      
+      // Arrow keys for prev/next
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        onPrev?.();
+      }
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        onNext?.();
+      }
+      
+      // Number keys for playback speed
+      if (e.key === '1') {
+        e.preventDefault();
+        onSetPlaybackSpeed?.(1);
+      }
+      if (e.key === '2') {
+        e.preventDefault();
+        onSetPlaybackSpeed?.(2);
+      }
+      if (e.key === '4') {
+        e.preventDefault();
+        onSetPlaybackSpeed?.(4);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [onPrev, onNext, onTogglePlayback, onSetPlaybackSpeed, setShowRightPanel, setShowBottomPanel, showRightPanel, showBottomPanel, setIsFullscreen, isFullscreen]);
+};
+
+const usePanelVisibility = (key: string, defaultValue: boolean) => {
+  const [isVisible, setIsVisible] = useState(() => {
+    if (typeof window === 'undefined') return defaultValue;
+    const saved = localStorage.getItem(`ide-${key}`);
+    return saved !== null ? JSON.parse(saved) : defaultValue;
+  });
+
+  useEffect(() => {
+    localStorage.setItem(`ide-${key}`, JSON.stringify(isVisible));
+  }, [key, isVisible]);
+
+  return [isVisible, setIsVisible] as const;
+};
+
+const useFullscreen = () => {
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  }, []);
+
+  return [isFullscreen, toggleFullscreen] as const;
+};
+
+// Memoized components
 const IDEPane = memo(({ 
   title, 
   subtitle, 
@@ -77,6 +203,18 @@ const IDEPane = memo(({
   extra, 
   className 
 }: PanelConfig & { className?: string; children: React.ReactNode }) => {
+  const [isResizing, setIsResizing] = useState(false);
+
+  useEffect(() => {
+    const handleResize = debounce(() => {
+      setIsResizing(true);
+      setTimeout(() => setIsResizing(false), 150);
+    }, 100);
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
     <div className={`flex flex-col h-full overflow-hidden ${className || ''}`}>
       <div className="px-1.5 py-1 border-b border-border-dark flex justify-between items-center bg-surface-darker/80 backdrop-blur-2xl shrink-0">
@@ -93,7 +231,7 @@ const IDEPane = memo(({
         </div>
         {extra}
       </div>
-      <div className="flex-1 overflow-hidden relative">
+      <div className={`flex-1 overflow-hidden relative transition-opacity duration-150 ${isResizing ? 'opacity-50' : 'opacity-100'}`}>
         {children}
       </div>
     </div>
@@ -102,7 +240,6 @@ const IDEPane = memo(({
 
 IDEPane.displayName = 'IDEPane';
 
-// Memoized Menu Dropdown component
 const MenuDropdown = memo(({ title, operations }: { title: string; operations?: Operation[] }) => {
   return (
     <div className="relative group/menu">
@@ -168,7 +305,6 @@ const MenuDropdown = memo(({ title, operations }: { title: string; operations?: 
 
 MenuDropdown.displayName = 'MenuDropdown';
 
-// Operations Dropdown component
 const OperationsDropdown = memo(({ operations }: { operations: Operation[] }) => {
   return (
     <div className="relative group/ops">
@@ -217,88 +353,53 @@ const OperationsDropdown = memo(({ operations }: { operations: Operation[] }) =>
 
 OperationsDropdown.displayName = 'OperationsDropdown';
 
-// Keyboard shortcuts hook
-const useKeyboardShortcuts = (
-  onPrev?: () => void | Promise<void>,
-  onNext?: () => void | Promise<void>,
-  onTogglePlayback?: () => void | Promise<void>,
-  onSetPlaybackSpeed?: (speed: number) => void | Promise<void>,
-  setShowRightPanel?: (show: boolean) => void,
-  setShowBottomPanel?: (show: boolean) => void,
-  showRightPanel?: boolean,
-  showBottomPanel?: boolean
-) => {
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      // Don't trigger if user is typing in an input
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        return;
-      }
+// Error Boundary Component
+class IDEErrorBoundary extends React.Component<{ children: ReactNode; fallback?: ReactNode }, { hasError: boolean; error?: Error }> {
+  constructor(props: { children: ReactNode; fallback?: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
 
-      // Ctrl/Cmd + B: Toggle right panel
-      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
-        e.preventDefault();
-        setShowRightPanel?.(!showRightPanel);
-      }
-      
-      // Ctrl/Cmd + J: Toggle bottom panel
-      if ((e.ctrlKey || e.metaKey) && e.key === 'j') {
-        e.preventDefault();
-        setShowBottomPanel?.(!showBottomPanel);
-      }
-      
-      // Space: Play/Pause
-      if (e.key === ' ' || e.key === 'Space') {
-        e.preventDefault();
-        onTogglePlayback?.();
-      }
-      
-      // Arrow keys for prev/next
-      if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        onPrev?.();
-      }
-      if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        onNext?.();
-      }
-      
-      // Number keys for playback speed
-      if (e.key === '1') {
-        e.preventDefault();
-        onSetPlaybackSpeed?.(1);
-      }
-      if (e.key === '2') {
-        e.preventDefault();
-        onSetPlaybackSpeed?.(2);
-      }
-      if (e.key === '4') {
-        e.preventDefault();
-        onSetPlaybackSpeed?.(4);
-      }
-    };
-    
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [onPrev, onNext, onTogglePlayback, onSetPlaybackSpeed, setShowRightPanel, setShowBottomPanel, showRightPanel, showBottomPanel]);
-};
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
 
-// Panel visibility persistence hook
-const usePanelVisibility = (key: string, defaultValue: boolean) => {
-  const [isVisible, setIsVisible] = useState(() => {
-    if (typeof window === 'undefined') return defaultValue;
-    const saved = localStorage.getItem(`ide-${key}`);
-    return saved !== null ? JSON.parse(saved) : defaultValue;
-  });
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('IDE Error:', error, errorInfo);
+    // You can send to Supabase analytics here
+  }
 
-  useEffect(() => {
-    localStorage.setItem(`ide-${key}`, JSON.stringify(isVisible));
-  }, [key, isVisible]);
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback || (
+        <div className="fixed inset-0 bg-background-dark flex items-center justify-center p-8 z-[10000]">
+          <div className="text-center max-w-md">
+            <span className="material-symbols-outlined text-6xl text-red-500 mb-4">error</span>
+            <h2 className="text-2xl font-black mb-2">IDE Error</h2>
+            <p className="text-text-secondary mb-4">
+              Something went wrong in the IDE layout.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-primary rounded font-bold hover:bg-primary/80 transition-colors"
+            >
+              Reload Page
+            </button>
+            {process.env.NODE_ENV === 'development' && this.state.error && (
+              <pre className="mt-4 p-2 bg-red-500/10 rounded text-left text-xs overflow-auto">
+                {this.state.error.message}
+              </pre>
+            )}
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
-  return [isVisible, setIsVisible] as const;
-};
-
-export default function IDELayout({
+// Main Layout Component
+function IDELayoutContent({
   children,
   title,
   category,
@@ -325,9 +426,12 @@ export default function IDELayout({
   const [showRightPanel, setShowRightPanel] = usePanelVisibility('show-right-panel', !!(rightPanelTop || rightPanelBottom));
   const [showBottomPanel, setShowBottomPanel] = usePanelVisibility('show-bottom-panel', !!bottomPanel);
   const [isMobile, setIsMobile] = useState(false);
+  const [isFullscreen, toggleFullscreen] = useFullscreen();
+  const [mounted, setMounted] = useState(false);
 
   // Check for mobile on mount and resize
   useEffect(() => {
+    setMounted(true);
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 1024); // Desktop-first: only show mobile warning below 1024px
     };
@@ -346,7 +450,9 @@ export default function IDELayout({
     setShowRightPanel,
     setShowBottomPanel,
     showRightPanel,
-    showBottomPanel
+    showBottomPanel,
+    toggleFullscreen,
+    isFullscreen
   );
 
   // Memoized timeline controls
@@ -425,6 +531,11 @@ export default function IDELayout({
     );
   }, [showTimeline, onPrev, onNext, onTogglePlayback, isPlaying, currentStep, totalSteps, playbackSpeed, onSetPlaybackSpeed]);
 
+  // Don't render until mounted to avoid hydration mismatch
+  if (!mounted) {
+    return null;
+  }
+
   // Desktop-only warning for small screens
   if (isMobile) {
     return (
@@ -454,7 +565,7 @@ export default function IDELayout({
   }
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-background-dark text-white overflow-hidden font-display">
+    <div className={`flex flex-col h-screen w-screen bg-background-dark text-white overflow-hidden font-display ${isFullscreen ? 'fixed inset-0 z-[9999]' : ''}`}>
       <Suspense fallback={null}>
         <AnalysisModal isOpen={isAnalysisModalOpen} onClose={() => setIsAnalysisModalOpen(false)} />
       </Suspense>
@@ -580,6 +691,16 @@ export default function IDELayout({
           </div>
 
           <div className="flex items-center gap-0.5 bg-surface-darker p-0.5 rounded border border-border-dark">
+            <motion.button 
+              whileHover={{ scale: 1.1, backgroundColor: 'rgba(255,255,255,0.05)' }} 
+              whileTap={{ scale: 0.9 }}
+              onClick={toggleFullscreen}
+              title={isFullscreen ? "Exit Fullscreen (Esc)" : "Fullscreen (Ctrl+Shift+F)"}
+              aria-label="Fullscreen"
+              className="text-text-secondary hover:text-white transition-colors p-0.5 rounded"
+            >
+              <span className="material-symbols-outlined text-xs">{isFullscreen ? 'fullscreen_exit' : 'fullscreen'}</span>
+            </motion.button>
             <motion.button 
               whileHover={{ scale: 1.1, backgroundColor: 'rgba(255,255,255,0.05)' }} 
               whileTap={{ scale: 0.9 }}
@@ -726,5 +847,14 @@ export default function IDELayout({
         </div>
       </motion.footer>
     </div>
+  );
+}
+
+// Wrapped export with Error Boundary
+export default function IDELayout(props: IDELayoutProps) {
+  return (
+    <IDEErrorBoundary>
+      <IDELayoutContent {...props} />
+    </IDEErrorBoundary>
   );
 }
