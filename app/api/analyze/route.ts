@@ -1,81 +1,122 @@
-import { NextResponse } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
+// app/api/analyze/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-export async function POST(request: Request) {
+// Initialize Gemini AI with your API key
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+
+export async function POST(req: NextRequest) {
   try {
-    const { code, language } = await request.json();
-    
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      console.error("GEMINI_API_KEY is missing");
+    const { code, language } = await req.json();
+
+    if (!code) {
       return NextResponse.json(
-        { error: "API key not configured. Please add GEMINI_API_KEY to environment variables." },
-        { status: 500 }
+        { error: 'No code provided' },
+        { status: 400 }
       );
     }
-    
-    const ai = new GoogleGenAI({ apiKey });
-    
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-exp",
-      contents: `You are an expert code analyst. Analyze the following ${language} code and provide a comprehensive complexity analysis.
 
-Code to analyze:
-\`\`\`${language.toLowerCase()}
-${code.substring(0, 3000)}
-\`\`\`
+    // Using stable Gemini 1.5 Pro model
+    // You can also use "gemini-1.5-flash" for faster responses
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
-Provide a detailed analysis including:
-1. Time complexity (Big O notation) with clear explanation
-2. Space complexity (Big O notation) with clear explanation
-3. Cyclomatic complexity (number of independent paths)
-4. Cognitive complexity (how hard it is to understand)
-5. Halstead metrics (difficulty, effort, estimated bugs)
-6. Specific bottlenecks with line numbers and severity levels
-7. Optimization recommendations
+    const prompt = `You are a code complexity analysis expert. Analyze the following ${language} code and return a JSON object with EXACTLY this structure (no additional text, just the JSON):
 
-Respond with a JSON object in this exact format:
 {
   "timeComplexity": "O(...)",
-  "timeExplanation": "Detailed explanation of time complexity...",
+  "timeExplanation": "Brief explanation of the time complexity",
   "spaceComplexity": "O(...)",
-  "spaceExplanation": "Detailed explanation of space complexity...",
+  "spaceExplanation": "Brief explanation of the space complexity",
   "cyclomaticComplexity": number,
-  "cognitiveComplexity": number,
   "halstead": {
     "difficulty": number,
     "effort": number,
-    "bugs": number,
-    "volume": number,
-    "vocabulary": number
+    "bugs": number
   },
   "bottlenecks": [
     {
       "line": number,
-      "issue": "Description of the issue",
-      "severity": "low|medium|high",
-      "suggestion": "How to fix it"
+      "issue": "description of the issue",
+      "severity": "low" | "medium" | "high",
+      "suggestion": "how to fix it"
     }
   ],
-  "recommendations": ["Recommendation 1", "Recommendation 2"]
-}`,
-      config: {
-        responseMimeType: "application/json",
-        temperature: 0.3,
-        maxOutputTokens: 1500
-      }
-    });
+  "cognitiveComplexity": number,
+  "maintainabilityIndex": number,
+  "recommendations": ["recommendation 1", "recommendation 2"]
+}
 
-    if (response.text) {
-      const parsedResult = JSON.parse(response.text);
-      return NextResponse.json({ success: true, ...parsedResult });
-    } else {
-      throw new Error("Failed to generate analysis");
+Important rules:
+- timeComplexity and spaceComplexity must use Big O notation (e.g., O(1), O(n), O(n²), O(log n), O(n log n), O(2ⁿ))
+- cyclomaticComplexity should be a number (count of linearly independent paths)
+- cognitiveComplexity should be a number (how hard to understand)
+- maintainabilityIndex should be between 0-100 (higher is better)
+- For bottlenecks, estimate line numbers as best you can
+- Provide 2-4 practical optimization recommendations
+
+Code to analyze:
+\`\`\`${language}
+${code}
+\`\`\`
+
+Return ONLY the JSON object, no markdown formatting, no other text.`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    // Clean the response text to ensure it's valid JSON
+    let cleanText = text.trim();
+    // Remove markdown code blocks if present
+    if (cleanText.startsWith('```json')) {
+      cleanText = cleanText.replace(/```json\n?/, '').replace(/```\n?$/, '');
+    } else if (cleanText.startsWith('```')) {
+      cleanText = cleanText.replace(/```\n?/, '').replace(/```\n?$/, '');
     }
-  } catch (error) {
-    console.error("Analysis error:", error);
+    
+    // Parse the JSON response
+    const analysisResults = JSON.parse(cleanText);
+    
+    // Validate required fields and provide defaults if needed
+    const validatedResults = {
+      timeComplexity: analysisResults.timeComplexity || 'O(n)',
+      timeExplanation: analysisResults.timeExplanation || 'Analysis completed',
+      spaceComplexity: analysisResults.spaceComplexity || 'O(n)',
+      spaceExplanation: analysisResults.spaceExplanation || 'Analysis completed',
+      cyclomaticComplexity: analysisResults.cyclomaticComplexity || 1,
+      halstead: {
+        difficulty: analysisResults.halstead?.difficulty || 0,
+        effort: analysisResults.halstead?.effort || 0,
+        bugs: analysisResults.halstead?.bugs || 0,
+      },
+      bottlenecks: analysisResults.bottlenecks || [],
+      cognitiveComplexity: analysisResults.cognitiveComplexity || 0,
+      maintainabilityIndex: analysisResults.maintainabilityIndex || 50,
+      recommendations: analysisResults.recommendations || [],
+    };
+    
+    return NextResponse.json(validatedResults);
+    
+  } catch (error: any) {
+    console.error('Analysis error:', error);
+    
+    // Handle specific API errors
+    if (error.message?.includes('404') || error.message?.includes('not found')) {
+      return NextResponse.json(
+        { error: 'Model not available. Please check your API key and model configuration.' },
+        { status: 500 }
+      );
+    }
+    
+    if (error instanceof SyntaxError) {
+      return NextResponse.json(
+        { error: 'Failed to parse analysis results. Please try again.' },
+        { status: 500 }
+      );
+    }
+    
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to analyze complexity" },
+      { error: error.message || 'Failed to analyze code' },
       { status: 500 }
     );
   }
