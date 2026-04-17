@@ -61,6 +61,7 @@ export default function AnalysisModal({ isOpen, onClose }: AnalysisModalProps) {
     let currentContent = '';
     
     const sectionMap: Record<string, { icon: string; color: string }> = {
+      'overview': { icon: 'analytics', color: 'primary' },
       'summary': { icon: 'description', color: 'primary' },
       'time complexity': { icon: 'schedule', color: 'primary' },
       'space complexity': { icon: 'memory', color: 'accent-mint' },
@@ -68,7 +69,7 @@ export default function AnalysisModal({ isOpen, onClose }: AnalysisModalProps) {
       'optimization': { icon: 'rocket', color: 'cyan-400' },
       'bugs': { icon: 'bug_report', color: 'red-400' },
       'suggestions': { icon: 'lightbulb', color: 'yellow-500' },
-      'overview': { icon: 'analytics', color: 'primary' }
+      'best practices': { icon: 'thumb_up', color: 'green-400' }
     };
     
     for (const line of lines) {
@@ -76,7 +77,7 @@ export default function AnalysisModal({ isOpen, onClose }: AnalysisModalProps) {
       let matched = false;
       
       for (const [key, config] of Object.entries(sectionMap)) {
-        if (lowerLine.includes(key) && (line.startsWith('#') || line.startsWith('**'))) {
+        if (lowerLine.includes(key) && (line.startsWith('#') || line.startsWith('**') || line.includes('📋') || line.includes('⏱️') || line.includes('💾') || line.includes('⚠️') || line.includes('🚀') || line.includes('🐛') || line.includes('💡'))) {
           if (currentSection && currentContent) {
             sections.push({
               title: currentSection,
@@ -85,7 +86,17 @@ export default function AnalysisModal({ isOpen, onClose }: AnalysisModalProps) {
               color: sectionMap[currentSection.toLowerCase()]?.color || 'text-secondary'
             });
           }
-          currentSection = key.charAt(0).toUpperCase() + key.slice(1);
+          // Extract clean title without emojis
+          let cleanTitle = key.charAt(0).toUpperCase() + key.slice(1);
+          if (lowerLine.includes('📋')) cleanTitle = 'Overview';
+          if (lowerLine.includes('⏱️')) cleanTitle = 'Time Complexity';
+          if (lowerLine.includes('💾')) cleanTitle = 'Space Complexity';
+          if (lowerLine.includes('⚠️')) cleanTitle = 'Edge Cases';
+          if (lowerLine.includes('🚀')) cleanTitle = 'Optimization';
+          if (lowerLine.includes('🐛')) cleanTitle = 'Potential Bugs';
+          if (lowerLine.includes('💡')) cleanTitle = 'Best Practices';
+          
+          currentSection = cleanTitle;
           currentContent = '';
           matched = true;
           break;
@@ -133,7 +144,7 @@ export default function AnalysisModal({ isOpen, onClose }: AnalysisModalProps) {
     try {
       const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
       if (!apiKey) {
-        throw new Error("Gemini API key not configured");
+        throw new Error("Gemini API key not configured. Please add NEXT_PUBLIC_GEMINI_API_KEY to your environment variables.");
       }
       
       const ai = new GoogleGenAI({ apiKey });
@@ -191,8 +202,9 @@ ${userCode.substring(0, 3000)} // Limit for API
 
 Provide the analysis in clear markdown format with emojis for visual appeal. Be specific, actionable, and educational.`;
 
+      // FIXED: Using stable model instead of experimental
       const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash-exp",
+        model: "gemini-1.5-pro", // Changed from gemini-2.0-flash-exp to stable model
         contents: prompt,
         config: {
           temperature: 0.4,
@@ -208,8 +220,19 @@ Provide the analysis in clear markdown format with emojis for visual appeal. Be 
     } catch (err) {
       console.error("AI Analysis failed:", err);
       const errorMessage = err instanceof Error ? err.message : "Analysis failed";
-      setAnalysisError(errorMessage);
-      setAnalysis(`## Analysis Failed\n\n**Error:** ${errorMessage}\n\nPlease check your API key configuration and try again.`);
+      
+      // Provide more helpful error messages
+      let userFriendlyMessage = errorMessage;
+      if (errorMessage.includes('404') || errorMessage.includes('not found')) {
+        userFriendlyMessage = "The AI model is temporarily unavailable. Please try again in a few minutes.";
+      } else if (errorMessage.includes('API key')) {
+        userFriendlyMessage = "API key configuration issue. Please check your environment variables.";
+      } else if (errorMessage.includes('quota')) {
+        userFriendlyMessage = "API quota exceeded. Please try again later.";
+      }
+      
+      setAnalysisError(userFriendlyMessage);
+      setAnalysis(`## Analysis Failed\n\n**Error:** ${userFriendlyMessage}\n\n### Troubleshooting:\n1. Check that your Gemini API key is valid\n2. Ensure you have API credits available\n3. Try again in a few minutes\n\nIf the problem persists, please contact support.`);
     } finally {
       setIsAnalyzing(false);
     }
@@ -365,7 +388,7 @@ Provide the analysis in clear markdown format with emojis for visual appeal. Be 
                         Analyzing Code...
                       </p>
                       <p className="text-[10px] text-text-secondary mt-1">
-                        This may take a few seconds
+                        Using Gemini 1.5 Pro AI
                       </p>
                     </div>
                   </div>
@@ -467,7 +490,7 @@ Provide the analysis in clear markdown format with emojis for visual appeal. Be 
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-[10px]">auto_awesome</span>
-                  <span>Powered by Gemini AI</span>
+                  <span>Powered by Gemini 1.5 Pro</span>
                 </div>
               </div>
             )}
