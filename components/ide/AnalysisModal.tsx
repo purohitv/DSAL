@@ -125,7 +125,6 @@ export default function AnalysisModal({ isOpen, onClose }: AnalysisModalProps) {
       const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
       if (!apiKey) throw new Error("Gemini API key not configured.");
       
-      // NEW: Explicit specialized SDK initialization
       const genAI = new GoogleGenerativeAI(apiKey);
       const stats = getCodeStats();
       
@@ -137,41 +136,85 @@ Code Statistics:
 - Loops: ${stats?.loops || 0}
 - Conditionals: ${stats?.conditionals || 0}
 
-Analysis Requirements:
-1. ## 📋 Overview
-2. ## ⏱️ Time Complexity Analysis
-3. ## 💾 Space Complexity Analysis  
-4. ## ⚠️ Edge Cases
-5. ## 🚀 Optimization Suggestions
-6. ## 🐛 Potential Bugs
-7. ## 💡 Best Practices
+Please provide a detailed analysis with the following sections (use markdown formatting):
 
-Code:
+## 📋 Overview
+Brief summary of what the code does and its main purpose.
+
+## ⏱️ Time Complexity Analysis
+- Big O notation with detailed explanation
+- Best case, average case, worst case scenarios
+- Identify bottlenecks
+
+## 💾 Space Complexity Analysis  
+- Big O notation with explanation
+- Memory usage patterns
+- Data structure efficiency
+
+## ⚠️ Edge Cases & Potential Issues
+- Input validation concerns
+- Off-by-one errors
+- Null/undefined handling
+- Recursion depth issues
+
+## 🚀 Optimization Suggestions
+- Specific improvements with code examples
+- Alternative approaches
+- Performance enhancements
+
+## 🐛 Potential Bugs
+- Logic errors
+- Type safety issues
+- Race conditions (if applicable)
+
+## 💡 Best Practices
+- Code style improvements
+- Readability suggestions
+- Maintainability tips
+
+Code to analyze:
 \`\`\`${playgroundLanguage}
 ${userCode.substring(0, 3000)}
-\`\`\``;
+\`\`\`
 
-      // NEW: Get Generative Model logic
-      const model = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash", // Using stable flash model
+Provide the analysis in clear markdown format with emojis for visual appeal. Be specific, actionable, and educational.`;
+
+      // FIXED: Move generationConfig to generateContent call
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+      
+      const result = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
         generationConfig: {
           temperature: 0.4,
           maxOutputTokens: 2000,
-          topP: 0.95
+          topP: 0.95,
         }
       });
-
-      const result = await model.generateContent(prompt);
-      const responseText = result.response.text() || "Analysis complete.";
       
-      setAnalysis(responseText);
-      setAnalysisError(null);
+      const responseText = result.response.text();
+      
+      if (responseText) {
+        setAnalysis(responseText);
+        setAnalysisError(null);
+      } else {
+        throw new Error("No response from Gemini API");
+      }
       
     } catch (err) {
       console.error("AI Analysis failed:", err);
       const errorMessage = err instanceof Error ? err.message : "Analysis failed";
-      setAnalysisError(errorMessage);
-      setAnalysis(`## Analysis Failed\n\n**Error:** ${errorMessage}`);
+      
+      let userFriendlyMessage = errorMessage;
+      if (errorMessage.includes('404')) {
+        userFriendlyMessage = "Model not available. Please check your API key.";
+      } else if (errorMessage.includes('API key')) {
+        userFriendlyMessage = "Invalid API key. Please check your environment variables.";
+      } else if (errorMessage.includes('quota')) {
+        userFriendlyMessage = "API quota exceeded. Please try again later.";
+      }
+      
+      setAnalysisError(userFriendlyMessage);
+      setAnalysis(`## Analysis Failed\n\n**Error:** ${userFriendlyMessage}\n\nPlease check your configuration and try again.`);
     } finally {
       setIsAnalyzing(false);
     }
@@ -261,7 +304,7 @@ ${userCode.substring(0, 3000)}
                     <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }} className="w-16 h-16 border-2 border-primary/30 border-t-primary rounded-full" />
                     <div className="text-center">
                       <p className="text-sm font-bold text-white uppercase tracking-widest animate-pulse">Analyzing Code...</p>
-                      <p className="text-[10px] text-text-secondary mt-1">Using Gemini 1.5 Flash AI</p>
+                      <p className="text-[10px] text-text-secondary mt-1">Using Gemini 1.5 Pro AI</p>
                     </div>
                   </div>
                 ) : (
@@ -270,7 +313,6 @@ ${userCode.substring(0, 3000)}
                       remarkPlugins={[remarkGfm]}
                       rehypePlugins={[rehypeHighlight]}
                       components={{
-                        // FIXED: Proper type handling for inline results
                         code: ({ className, children, ...props }) => {
                           const match = /language-(\w+)/.exec(className || '');
                           return !match ? (
@@ -293,13 +335,14 @@ ${userCode.substring(0, 3000)}
             </div>
             
             {/* Footer */}
-            {!isAnalyzing && (
+            {!isAnalyzing && userCode && (
               <div className="px-6 py-2 border-t border-white/10 bg-surface-darker/30 flex justify-between items-center text-[8px] text-text-secondary">
                 <div className="flex gap-3">
-                  <span>{getCodeStats()?.codeLines} lines</span>
-                  <span>{getCodeStats()?.functions} functions</span>
+                  <span>{getCodeStats()?.codeLines || 0} lines</span>
+                  <span>{getCodeStats()?.functions || 0} functions</span>
+                  <span>{getCodeStats()?.loops || 0} loops</span>
                 </div>
-                <div>Powered by Gemini 1.5 Flash</div>
+                <div>Powered by Gemini 1.5 Pro</div>
               </div>
             )}
           </motion.div>
