@@ -41,6 +41,14 @@ const config: Config = {
                 "lecture-canvas": "#0f0b0b",
                 "lecture-panel": "#1a1212",
                 "lecture-border": "#392828",
+                // Quantum IDE Colors (for Grover's Algorithm)
+                "primary-quantum": "#d946ef",
+                "primary-dark": "#a21caf",
+                "primary-purple": "#8b5cf6",
+                "accent-cyan": "#22d3ee",
+                "panel-dark-quantum": "#1a1025",
+                "border-dark-quantum": "#342245",
+                "text-dim-quantum": "#a78bfa",
             },
             fontFamily: {
                 "display": ["Space Grotesk", "sans-serif"],
@@ -51,6 +59,13 @@ const config: Config = {
                 "hero-glow": "radial-gradient(circle at center, rgba(146, 19, 236, 0.15) 0%, rgba(5, 5, 10, 0) 70%)",
                 "grid-pattern": "linear-gradient(to right, #302839 1px, transparent 1px), linear-gradient(to bottom, #302839 1px, transparent 1px)",
                 "radial-glow": "radial-gradient(circle at center, rgba(127, 19, 236, 0.15) 0%, transparent 70%)",
+                "circuit-pattern": "radial-gradient(rgba(139, 92, 246, 0.1) 1px, transparent 1px)",
+            },
+            boxShadow: {
+                "neon": "0 0 10px #d946ef, 0 0 30px #d946ef",
+                "neon-secondary": "0 0 10px #8b5cf6, 0 0 30px #8b5cf6",
+                "cinematic": "0 20px 40px -10px rgba(0,0,0,0.6)",
+                "gate": "0 4px 0 #a21caf, 0 5px 10px rgba(0,0,0,0.5)",
             },
             animation: {
                 "float": "float 6s ease-in-out infinite",
@@ -82,4 +97,5 @@ const config: Config = {
     },
     plugins: [],
 };
+
 export default config;
