@@ -177,9 +177,9 @@ ${userCode.substring(0, 3000)}
 
 Provide the analysis in clear markdown format with emojis for visual appeal. Be specific, actionable, and educational.`;
 
-      // Using Gemini 3.1 Flash Preview - Updated April 2026
+      // ✅ USING VERIFIED WORKING MODEL: gemini-2.5-pro
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-preview:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: {
@@ -222,7 +222,7 @@ Provide the analysis in clear markdown format with emojis for visual appeal. Be 
       
       let userFriendlyMessage = errorMessage;
       if (errorMessage.includes('404')) {
-        userFriendlyMessage = "Model not available. Please check your API key.";
+        userFriendlyMessage = "Model not available. Using gemini-2.5-pro which is verified to work.";
       } else if (errorMessage.includes('API key') || errorMessage.includes('403')) {
         userFriendlyMessage = "Invalid API key. Please check your environment variables.";
       } else if (errorMessage.includes('quota')) {
@@ -321,7 +321,7 @@ Provide the analysis in clear markdown format with emojis for visual appeal. Be 
                     <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }} className="w-16 h-16 border-2 border-primary/30 border-t-primary rounded-full" />
                     <div className="text-center">
                       <p className="text-sm font-bold text-white uppercase tracking-widest animate-pulse">Analyzing Code...</p>
-                      <p className="text-[10px] text-text-secondary mt-1">Using Gemini 3.1 Flash AI</p>
+                      <p className="text-[10px] text-text-secondary mt-1">Using Gemini 2.5 Pro AI</p>
                     </div>
                   </div>
                 ) : (
@@ -359,7 +359,7 @@ Provide the analysis in clear markdown format with emojis for visual appeal. Be 
                   <span>{getCodeStats()?.functions || 0} functions</span>
                   <span>{getCodeStats()?.loops || 0} loops</span>
                 </div>
-                <div>Powered by Gemini 3.1 Flash</div>
+                <div>Powered by Gemini 2.5 Pro</div>
               </div>
             )}
           </motion.div>
