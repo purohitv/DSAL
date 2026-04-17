@@ -4,7 +4,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GoogleGenAI, Type } from '@google/genai';
 import Editor from '@monaco-editor/react';
 
 interface AnalysisResults {
@@ -162,73 +161,30 @@ export default function ComplexityAnalysisDashboard() {
     setResults(null);
     
     try {
-      const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-      if (!apiKey) {
-        throw new Error("Gemini API key is missing. Please check your environment variables.");
-      }
-
-      const ai = new GoogleGenAI({ apiKey });
-      
-      const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash-exp",
-        contents: `You are an expert code analyst. Analyze the following ${language} code and provide a comprehensive complexity analysis.
-
-Code to analyze:
-\`\`\`${language.toLowerCase()}
-${code.substring(0, 3000)}
-\`\`\`
-
-Provide a detailed analysis including:
-1. Time complexity (Big O notation) with clear explanation
-2. Space complexity (Big O notation) with clear explanation
-3. Cyclomatic complexity (number of independent paths)
-4. Cognitive complexity (how hard it is to understand)
-5. Halstead metrics (difficulty, effort, estimated bugs)
-6. Specific bottlenecks with line numbers and severity levels
-7. Optimization recommendations
-
-Respond with a JSON object in this exact format:
-{
-  "timeComplexity": "O(...)",
-  "timeExplanation": "Detailed explanation of time complexity...",
-  "spaceComplexity": "O(...)",
-  "spaceExplanation": "Detailed explanation of space complexity...",
-  "cyclomaticComplexity": number,
-  "cognitiveComplexity": number,
-  "halstead": {
-    "difficulty": number,
-    "effort": number,
-    "bugs": number,
-    "volume": number,
-    "vocabulary": number
-  },
-  "bottlenecks": [
-    {
-      "line": number,
-      "issue": "Description of the issue",
-      "severity": "low|medium|high",
-      "suggestion": "How to fix it"
-    }
-  ],
-  "recommendations": ["Recommendation 1", "Recommendation 2"]
-}`,
-        config: {
-          responseMimeType: "application/json",
-          temperature: 0.3,
-          maxOutputTokens: 1500
-        }
+      // Call our API route instead of directly calling Gemini
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          code: code.substring(0, 3000),
+          language: language,
+        }),
+        signal: abortControllerRef.current.signal,
       });
-
-      if (response.text) {
-        const parsedResult = JSON.parse(response.text);
-        setResults(parsedResult);
-      } else {
-        throw new Error("Failed to generate analysis. Please try again.");
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to analyze code");
       }
+      
+      setResults(data);
     } catch (err: any) {
       console.error("Analysis error:", err);
       if (err.name !== 'AbortError') {
-        setError(err.message || "An error occurred during analysis. Please check your API key and try again.");
+        setError(err.message || "An error occurred during analysis. Please try again.");
       }
     } finally {
       setIsAnalyzing(false);
