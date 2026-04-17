@@ -1,9 +1,5 @@
 // app/api/analyze/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
-
-// Initialize Gemini AI with your API key
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,6 +9,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: 'No code provided' },
         { status: 400 }
+      );
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.error('GEMINI_API_KEY not configured');
+      return NextResponse.json(
+        { error: 'API key not configured. Please add GEMINI_API_KEY to your environment variables.' },
+        { status: 500 }
       );
     }
 
@@ -57,20 +62,52 @@ ${code.substring(0, 3000)}
 
 Return ONLY the JSON object. No markdown formatting. No explanation. Just the JSON.`;
 
-    // Generate content using the new SDK
-    const response = await genAI.models.generateContent({
-      model: 'gemini-1.5-pro', // Use stable model
-      contents: prompt,
-    });
+    // Use fetch API directly - no SDK required
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [{ text: prompt }]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.3,
+            maxOutputTokens: 2000,
+            topP: 0.95,
+          }
+        }),
+      }
+    );
 
-    const text = response.text;
-    
-    if (!text) {
-      throw new Error('No response from Gemini');
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Gemini API error:', errorData);
+      
+      // Check for specific error types
+      if (response.status === 404) {
+        throw new Error('Model not found. Please check your API key and model name.');
+      } else if (response.status === 403 || response.status === 401) {
+        throw new Error('Invalid API key. Please check your GEMINI_API_KEY environment variable.');
+      } else {
+        throw new Error(errorData.error?.message || `API error: ${response.status}`);
+      }
     }
-    
+
+    const data = await response.json();
+    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!responseText) {
+      throw new Error('Empty response from Gemini API');
+    }
+
     // Clean the response text to ensure it's valid JSON
-    let cleanText = text.trim();
+    let cleanText = responseText.trim();
     
     // Remove markdown code blocks if present
     if (cleanText.startsWith('```json')) {
@@ -106,16 +143,23 @@ Return ONLY the JSON object. No markdown formatting. No explanation. Just the JS
     console.error('Analysis error:', error);
     
     // Handle specific error types
-    if (error.message?.includes('API key')) {
+    if (error.message?.includes('API key') || error.message?.includes('Invalid API key')) {
       return NextResponse.json(
-        { error: 'Invalid or missing Gemini API key. Please check your environment variables.' },
+        { error: 'Invalid or missing Gemini API key. Please check your GEMINI_API_KEY environment variable.' },
         { status: 500 }
       );
     }
     
-    if (error.message?.includes('404') || error.message?.includes('not found')) {
+    if (error.message?.includes('404') || error.message?.includes('Model not found')) {
       return NextResponse.json(
         { error: 'Gemini model not available. Please check your API key and model configuration.' },
+        { status: 500 }
+      );
+    }
+    
+    if (error.message?.includes('quota')) {
+      return NextResponse.json(
+        { error: 'API quota exceeded. Please try again later or check your Google Cloud billing.' },
         { status: 500 }
       );
     }
