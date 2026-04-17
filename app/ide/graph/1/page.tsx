@@ -50,7 +50,7 @@ const ADJ_LIST: Record<string, string[]> = {
   '5': ['3', '4']
 };
 
-const CODE_SNIPPET = \`#include <iostream>
+const CODE_SNIPPET = `#include <iostream>
 #include <vector>
 #include <queue>
 using namespace std;
@@ -76,7 +76,7 @@ void BFS(int start, vector<vector<int>>& adj) {
         }
     }
 }
-\`;
+`;
 
 export default function DsalAlgorithmIdeGraphVisualization() {
   const [nodes, setNodes] = useState<Node[]>(INITIAL_NODES);
@@ -119,7 +119,7 @@ export default function DsalAlgorithmIdeGraphVisualization() {
       return {
         ...n,
         style: {
-          background: bg, color: "#fff", border: \`2px solid \${border}\`, borderRadius: "50%",
+          background: bg, color: "#fff", border: `2px solid ${border}`, borderRadius: "50%",
           width: 50, height: 50, display: "flex", alignItems: "center", justifyContent: "center",
           fontWeight: "bold", boxShadow: shadow, zIndex: isActive ? 10 : 1, transition: "all 0.3s ease"
         }
@@ -200,14 +200,14 @@ export default function DsalAlgorithmIdeGraphVisualization() {
     setActiveLine(11);
     visited.push('0');
     styleGraph(null, visited, q);
-    setVariables([{ name: 'q', value: \`[\${q.join(',')}]\`, type: 'queue<int>' }]);
+    setVariables([{ name: 'q', value: `[${q.join(',')}]`, type: 'queue<int>' }]);
     await sleep(600);
 
     // Line 12: q.push(start)
     setActiveLine(12);
     q.push('0');
     styleGraph(null, visited, q);
-    setVariables([{ name: 'q', value: \`[\${q.join(',')}]\`, type: 'queue<int>' }]);
+    setVariables([{ name: 'q', value: `[${q.join(',')}]`, type: 'queue<int>' }]);
     await sleep(600);
 
     // Line 14: while(!q.empty)
@@ -218,19 +218,19 @@ export default function DsalAlgorithmIdeGraphVisualization() {
         // Line 15: int u = q.front();
         setActiveLine(15);
         let u = q[0];
-        setVariables([{ name: 'u', value: u, type: 'int' }, { name: 'q', value: \`[\${q.join(',')}]\`, type: 'queue<int>' }]);
+        setVariables([{ name: 'u', value: u, type: 'int' }, { name: 'q', value: `[${q.join(',')}]`, type: 'queue<int>' }]);
         await sleep(600);
 
         // Line 16: q.pop();
         setActiveLine(16);
         q.shift();
-        setVariables([{ name: 'u', value: u, type: 'int' }, { name: 'q', value: \`[\${q.join(',')}]\`, type: 'queue<int>' }]);
+        setVariables([{ name: 'u', value: u, type: 'int' }, { name: 'q', value: `[${q.join(',')}]`, type: 'queue<int>' }]);
         await sleep(600);
         
         // Line 17: cout << u
         setActiveLine(17);
         bfsOutput.push(u);
-        setTerminalOutput(prev => [...prev, \`> Output: \${bfsOutput.join(', ')}\`]);
+        setTerminalOutput(prev => [...prev, `> Output: ${bfsOutput.join(', ')}`]);
         styleGraph(u, visited, q); // Mark current active
         await sleep(800);
 
@@ -239,7 +239,7 @@ export default function DsalAlgorithmIdeGraphVisualization() {
         for (const v of neighbors) {
             setActiveLine(19);
             styleGraph(u, visited, q, { id: 'test', source: u, target: v } as Edge);
-            setVariables([{ name: 'u', value: u, type: 'int' }, { name: 'v', value: v, type: 'int' }, { name: 'q', value: \`[\${q.join(',')}]\`, type: 'queue<int>' }]);
+            setVariables([{ name: 'u', value: u, type: 'int' }, { name: 'v', value: v, type: 'int' }, { name: 'q', value: `[${q.join(',')}]`, type: 'queue<int>' }]);
             await sleep(600);
 
             // Line 20: if (!visited[v])
@@ -256,8 +256,8 @@ export default function DsalAlgorithmIdeGraphVisualization() {
                 // Line 22: q.push(v)
                 setActiveLine(22);
                 q.push(v);
-                setTerminalOutput(prev => [...prev, \`> Enqueued neighbor: \${v}\`]);
-                setVariables([{ name: 'u', value: u, type: 'int' }, { name: 'v', value: v, type: 'int' }, { name: 'q', value: \`[\${q.join(',')}]\`, type: 'queue<int>' }]);
+                setTerminalOutput(prev => [...prev, `> Enqueued neighbor: ${v}`]);
+                setVariables([{ name: 'u', value: u, type: 'int' }, { name: 'v', value: v, type: 'int' }, { name: 'q', value: `[${q.join(',')}]`, type: 'queue<int>' }]);
                 styleGraph(u, visited, q);
                 await sleep(600);
             }
@@ -310,7 +310,7 @@ export default function DsalAlgorithmIdeGraphVisualization() {
         icon: "code",
         content: (
           <div className="flex-1 overflow-hidden bg-[#0d1117] h-full">
-            <style>{\` .bg-blue-500\\\\/30 { background-color: rgba(59, 130, 246, 0.3) !important; } \`}</style>
+            <style>{` .bg-blue-500\\/30 { background-color: rgba(59, 130, 246, 0.3) !important; } `}</style>
             <Editor
               height="100%"
               defaultLanguage="cpp"
@@ -370,7 +370,7 @@ export default function DsalAlgorithmIdeGraphVisualization() {
               ) : (
                 callStack.map((call, i) => (
                   <motion.div 
-                    key={\`\${call.id}-\${i}\`}
+                    key={`${call.id}-${i}`}
                     initial={{ opacity: 0, x: 15 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, scale: 0.9 }}
