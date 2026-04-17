@@ -30,7 +30,7 @@ class BSTNode {
 
   constructor(value: number) {
     this.value = value;
-    this.id = \`node-\${value}-\${Math.random().toString(36).substr(2, 9)}\`;
+    this.id = `node-${value}-${Math.random().toString(36).substr(2, 9)}`;
   }
 }
 
@@ -109,7 +109,7 @@ const generateFlowElements = (
 
     if (parentId) {
       edges.push({
-        id: \`e-\${parentId}-\${node.id}\`,
+        id: `e-${parentId}-${node.id}`,
         source: parentId,
         target: node.id,
         animated: isActive || isVisited,
@@ -132,7 +132,7 @@ const generateFlowElements = (
   return { nodes, edges };
 };
 
-const CODE_SNIPPET = \`void inorder(Node* root) {
+const CODE_SNIPPET = `void inorder(Node* root) {
     if (!root) return;
     inorder(root->left);
     cout << root->val << " ";
@@ -151,7 +151,7 @@ void postorder(Node* root) {
     postorder(root->left);
     postorder(root->right);
     cout << root->val << " ";
-}\`;
+}`;
 
 export default function DsalAlgorithmIdeBstVisualization4() {
   const [bst, setBst] = useState(() => {
@@ -229,13 +229,13 @@ export default function DsalAlgorithmIdeBstVisualization4() {
     setInputValue("");
     bst.insert(val);
     updateFlow();
-    setTerminalOutput(prev => [...prev, \`> Inserted \${val} into tree.\`]);
+    setTerminalOutput(prev => [...prev, `> Inserted ${val} into tree.`]);
   };
 
   const runTraversal = async (type: 'inorder' | 'preorder' | 'postorder') => {
       if(isPlaying || !bst.root) return;
       setIsPlaying(true);
-      setTerminalOutput(prev => [...prev, \`> Starting \${type.toUpperCase()} traversal...\`]);
+      setTerminalOutput(prev => [...prev, `> Starting ${type.toUpperCase()} traversal...`]);
       setCallStack([]);
       setVariables([]);
       
@@ -245,7 +245,7 @@ export default function DsalAlgorithmIdeBstVisualization4() {
       const animateTraversal = async (node: BSTNode | null) => {
           if (!node) return;
           
-          setCallStack(prev => [{ id: node.id, name: \`\${type}(\${node.value})\`, line: type === 'inorder' ? 1 : type === 'preorder' ? 7 : 14 }, ...prev]);
+          setCallStack(prev => [{ id: node.id, name: `${type}(${node.value})`, line: type === 'inorder' ? 1 : type === 'preorder' ? 7 : 14 }, ...prev]);
           setVariables([{ name: 'root->val', value: node.value, type: 'int' }]);
 
           // PREORDER LOGIC
@@ -255,13 +255,13 @@ export default function DsalAlgorithmIdeBstVisualization4() {
               await sleep(800);
               visited.push(node.id);
               traversalOutput.push(node.value);
-              setTerminalOutput(prev => [...prev, \`> Output: \${traversalOutput.join(', ')}\`]);
+              setTerminalOutput(prev => [...prev, `> Output: ${traversalOutput.join(', ')}`]);
               await sleep(400);
 
               setActiveLine(10); await sleep(400);
               await animateTraversal(node.left);
               
-              setCallStack(prev => { const n = [...prev]; n.shift(); return [{ id: node.id, name: \`preorder(\${node.value})\`, line: 7 }, ...n.slice(1)]; });
+              setCallStack(prev => { const n = [...prev]; n.shift(); return [{ id: node.id, name: `preorder(${node.value})`, line: 7 }, ...n.slice(1)]; });
               setActiveLine(11); await sleep(400);
               await animateTraversal(node.right);
           }
@@ -273,14 +273,14 @@ export default function DsalAlgorithmIdeBstVisualization4() {
               await sleep(400);
               await animateTraversal(node.left);
 
-              setCallStack(prev => { const n = [...prev]; n.shift(); return [{ id: node.id, name: \`inorder(\${node.value})\`, line: 1 }, ...n.slice(1)]; });
+              setCallStack(prev => { const n = [...prev]; n.shift(); return [{ id: node.id, name: `inorder(${node.value})`, line: 1 }, ...n.slice(1)]; });
               setVariables([{ name: 'root->val', value: node.value, type: 'int' }]);
               setActiveLine(4);
               updateFlow(node.id, visited);
               await sleep(800);
               visited.push(node.id);
               traversalOutput.push(node.value);
-              setTerminalOutput(prev => [...prev, \`> Output: \${traversalOutput.join(', ')}\`]);
+              setTerminalOutput(prev => [...prev, `> Output: ${traversalOutput.join(', ')}`]);
               await sleep(400);
 
               setActiveLine(5); await sleep(400);
@@ -294,19 +294,19 @@ export default function DsalAlgorithmIdeBstVisualization4() {
               await sleep(400);
               await animateTraversal(node.left);
 
-              setCallStack(prev => { const n = [...prev]; n.shift(); return [{ id: node.id, name: \`postorder(\${node.value})\`, line: 14 }, ...n.slice(1)]; });
+              setCallStack(prev => { const n = [...prev]; n.shift(); return [{ id: node.id, name: `postorder(${node.value})`, line: 14 }, ...n.slice(1)]; });
               setVariables([{ name: 'root->val', value: node.value, type: 'int' }]);
               setActiveLine(17); await sleep(400);
               await animateTraversal(node.right);
 
-              setCallStack(prev => { const n = [...prev]; n.shift(); return [{ id: node.id, name: \`postorder(\${node.value})\`, line: 14 }, ...n.slice(1)]; });
+              setCallStack(prev => { const n = [...prev]; n.shift(); return [{ id: node.id, name: `postorder(${node.value})`, line: 14 }, ...n.slice(1)]; });
               setVariables([{ name: 'root->val', value: node.value, type: 'int' }]);
               setActiveLine(18);
               updateFlow(node.id, visited);
               await sleep(800);
               visited.push(node.id);
               traversalOutput.push(node.value);
-              setTerminalOutput(prev => [...prev, \`> Output: \${traversalOutput.join(', ')}\`]);
+              setTerminalOutput(prev => [...prev, `> Output: ${traversalOutput.join(', ')}`]);
               await sleep(400);
           }
 
@@ -317,7 +317,7 @@ export default function DsalAlgorithmIdeBstVisualization4() {
       await animateTraversal(bst.root);
       
       updateFlow(null, visited);
-      setTerminalOutput(prev => [...prev, \`> \${type.toUpperCase()} Traversal Complete!\`]);
+      setTerminalOutput(prev => [...prev, `> ${type.toUpperCase()} Traversal Complete!`]);
       setActiveLine(null);
       setVariables([]);
       setIsPlaying(false);
@@ -393,9 +393,9 @@ export default function DsalAlgorithmIdeBstVisualization4() {
         icon: "code",
         content: (
           <div className="flex-1 overflow-hidden bg-[#0d1117] h-full">
-            <style>{\`
-              .bg-blue-500\\\\/30 { background-color: rgba(59, 130, 246, 0.3) !important; }
-            \`}</style>
+            <style>{`
+              .bg-blue-500\\/30 { background-color: rgba(59, 130, 246, 0.3) !important; }
+            `}</style>
             <Editor
               height="100%"
               defaultLanguage="cpp"
@@ -467,16 +467,16 @@ export default function DsalAlgorithmIdeBstVisualization4() {
               ) : (
                 callStack.map((call, i) => (
                   <motion.div 
-                    key={\`\${call.id}-\${i}\`}
+                    key={`${call.id}-${i}`}
                     initial={{ opacity: 0, x: 15 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, scale: 0.9 }}
-                    className={\`flex flex-col p-1.5 rounded transition-colors \${
+                    className={`flex flex-col p-1.5 rounded transition-colors ${
                       i === 0 ? 'bg-[#282e39] border-l-2 border-primary rounded-r shadow-sm' : 'border border-transparent opacity-60'
-                    }\`}
+                    }`}
                   >
-                    <span className={\`font-mono text-[10px] \${i === 0 ? 'text-white' : 'text-gray-300'}\`}>{call.name}</span>
-                    <span className={\`font-mono text-[8px] \${i === 0 ? 'text-gray-400' : 'text-gray-500'}\`}>Line: {call.line}</span>
+                    <span className={`font-mono text-[10px] ${i === 0 ? 'text-white' : 'text-gray-300'}`}>{call.name}</span>
+                    <span className={`font-mono text-[8px] ${i === 0 ? 'text-gray-400' : 'text-gray-500'}`}>Line: {call.line}</span>
                   </motion.div>
                 ))
               )}
