@@ -5,7 +5,9 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useSimulationStore } from '@/store/useSimulationStore';
 import ComplexityChart from './ComplexityChart';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GoogleGenAI } from "@google/genai";
+
+// Remove the GoogleGenAI import - we'll use fetch API directly to avoid credentials issue
+// import { GoogleGenAI } from "@google/genai";
 
 interface ComplexityEstimate {
   time: string;
@@ -144,7 +146,7 @@ export default function ComplexityDashboard() {
     };
   }, [complexityData]);
 
-  // AI-based complexity analysis with better error handling
+  // AI-based complexity analysis using fetch API (bypasses SDK credentials issue)
   const analyzeComplexity = useCallback(async () => {
     if (!userCode || userCode.length < 10) {
       setAiEstimate(null);
@@ -167,8 +169,6 @@ export default function ComplexityDashboard() {
         throw new Error("Gemini API key not configured");
       }
       
-      const ai = new GoogleGenAI({ apiKey });
-      
       const prompt = `Analyze the following ${playgroundLanguage} code and estimate its time and space complexity.
       
       Requirements:
@@ -179,7 +179,7 @@ export default function ComplexityDashboard() {
       
       Code to analyze:
       \`\`\`${playgroundLanguage}
-      ${userCode.substring(0, 2000)} // Limit code length for API
+      ${userCode.substring(0, 2000)}
       \`\`\`
       
       Additional context from execution trace:
@@ -197,18 +197,39 @@ export default function ComplexityDashboard() {
         "spaceDetails": "Detailed explanation of space complexity (optional)",
         "confidence": 0.0-1.0
       }`;
-      
-      const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash-exp",
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          temperature: 0.3,
-          maxOutputTokens: 500
-        }
+
+      // Use fetch API directly instead of the SDK to avoid credentials issue
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: prompt }]
+          }],
+          generationConfig: {
+            temperature: 0.3,
+            maxOutputTokens: 500,
+            responseMimeType: "application/json"
+          }
+        }),
+        signal: abortControllerRef.current.signal,
       });
 
-      const result = JSON.parse(response.text || "{}");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || `API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      
+      if (!responseText) {
+        throw new Error("Empty response from API");
+      }
+      
+      const result = JSON.parse(responseText);
       
       if (result.time && result.space) {
         setAiEstimate({
@@ -226,10 +247,16 @@ export default function ComplexityDashboard() {
       }
     } catch (err) {
       console.error("AI Analysis failed:", err);
+      
+      // Don't show error for abort errors
+      if (err instanceof Error && err.name === 'AbortError') {
+        return;
+      }
+      
       setAnalysisError(err instanceof Error ? err.message : "Analysis failed");
       
       // Retry logic for network errors
-      if (retryCount < 2 && err instanceof Error && err.message.includes("network")) {
+      if (retryCount < 2 && err instanceof Error && (err.message.includes("network") || err.message.includes("fetch"))) {
         setTimeout(() => {
           setRetryCount(prev => prev + 1);
           analyzeComplexity();
