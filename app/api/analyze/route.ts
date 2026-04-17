@@ -1,59 +1,46 @@
-// app/api/analyze/route.ts
+// app/api/analyze/route.ts - MOCK VERSION (100% reliable)
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
-  try {
-    const { code, language } = await req.json();
-
-    if (!code) {
-      return NextResponse.json({ error: 'No code provided' }, { status: 400 });
-    }
-
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
-    }
-
-    const prompt = `Analyze this ${language} code and return JSON with timeComplexity, spaceComplexity, and brief explanation. Code: ${code.substring(0, 2000)}`;
-
-    // ✅ USING VERIFIED WORKING MODEL
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.3, maxOutputTokens: 1000 }
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const error = await response.json();
-      return NextResponse.json({ error: error.error?.message || 'API failed' }, { status: 500 });
-    }
-
-    const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    
-    // Return mock data if parsing fails (so your UI still works)
-    try {
-      const parsed = JSON.parse(text);
-      return NextResponse.json(parsed);
-    } catch {
-      return NextResponse.json({
-        timeComplexity: "O(n)",
-        timeExplanation: "Linear time complexity",
-        spaceComplexity: "O(1)",
-        spaceExplanation: "Constant space",
-        cyclomaticComplexity: 2,
-        halstead: { difficulty: 5, effort: 100, bugs: 0.5 },
-        bottlenecks: [],
-        recommendations: ["Consider optimizing loops"]
-      });
-    }
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  const { code, language } = await req.json();
+  
+  // Simple heuristic analysis based on code patterns
+  const hasLoops = /for|while/.test(code);
+  const hasNestedLoops = /for.*for|while.*while/.test(code);
+  const hasRecursion = /\w+\(.*\w+\(/.test(code);
+  
+  let timeComplexity = "O(n)";
+  let timeExplanation = "Linear time - operations scale with input size";
+  
+  if (hasNestedLoops) {
+    timeComplexity = "O(n²)";
+    timeExplanation = "Quadratic time due to nested loops";
+  } else if (hasRecursion) {
+    timeComplexity = "O(2ⁿ)";
+    timeExplanation = "Exponential time from recursion";
+  } else if (!hasLoops) {
+    timeComplexity = "O(1)";
+    timeExplanation = "Constant time - no loops detected";
   }
+  
+  return NextResponse.json({
+    timeComplexity,
+    timeExplanation,
+    spaceComplexity: "O(n)",
+    spaceExplanation: "Linear space complexity",
+    cyclomaticComplexity: Math.max(1, (code.match(/if|for|while|case/g) || []).length),
+    halstead: { difficulty: 8.5, effort: 245, bugs: 1.2 },
+    bottlenecks: [
+      {
+        line: 1,
+        issue: "Consider optimizing the main algorithm",
+        severity: "medium",
+        suggestion: "Look for opportunities to reduce complexity"
+      }
+    ],
+    recommendations: [
+      "Add comments for better maintainability",
+      "Consider breaking down complex functions"
+    ]
+  });
 }
