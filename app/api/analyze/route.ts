@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     if (!apiKey) {
       console.error('GEMINI_API_KEY not configured');
       return NextResponse.json(
-        { error: 'API key not configured. Please add GEMINI_API_KEY to your environment variables.' },
+        { error: 'API key not configured' },
         { status: 500 }
       );
     }
@@ -25,9 +25,9 @@ export async function POST(req: NextRequest) {
 
 {
   "timeComplexity": "O(...)",
-  "timeExplanation": "Brief explanation of the time complexity",
+  "timeExplanation": "Brief explanation",
   "spaceComplexity": "O(...)",
-  "spaceExplanation": "Brief explanation of the space complexity",
+  "spaceExplanation": "Brief explanation",
   "cyclomaticComplexity": number,
   "halstead": {
     "difficulty": number,
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
   "bottlenecks": [
     {
       "line": number,
-      "issue": "description of the issue",
+      "issue": "description",
       "severity": "low" | "medium" | "high",
       "suggestion": "how to fix it"
     }
@@ -47,14 +47,6 @@ export async function POST(req: NextRequest) {
   "recommendations": ["recommendation 1", "recommendation 2"]
 }
 
-Important rules:
-- Use proper Big O notation: O(1), O(n), O(n²), O(log n), O(n log n), O(2ⁿ), O(n!)
-- cyclomaticComplexity: count of independent paths (typically 1-20)
-- cognitiveComplexity: how hard to understand (typically 1-30)
-- maintainabilityIndex: 0-100 (higher is better)
-- For bottlenecks, estimate line numbers as best you can
-- Provide 2-4 practical, actionable recommendations
-
 Code to analyze:
 \`\`\`${language}
 ${code.substring(0, 3000)}
@@ -62,9 +54,9 @@ ${code.substring(0, 3000)}
 
 Return ONLY the JSON object. No markdown formatting. No explanation. Just the JSON.`;
 
-    // Use fetch API directly - no SDK required
+    // ✅ USING GEMINI 3.1 FLASH (fast + intelligent)
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-preview:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: {
@@ -87,16 +79,7 @@ Return ONLY the JSON object. No markdown formatting. No explanation. Just the JS
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('Gemini API error:', errorData);
-      
-      // Check for specific error types
-      if (response.status === 404) {
-        throw new Error('Model not found. Please check your API key and model name.');
-      } else if (response.status === 403 || response.status === 401) {
-        throw new Error('Invalid API key. Please check your GEMINI_API_KEY environment variable.');
-      } else {
-        throw new Error(errorData.error?.message || `API error: ${response.status}`);
-      }
+      throw new Error(errorData.error?.message || `API error: ${response.status}`);
     }
 
     const data = await response.json();
@@ -106,25 +89,20 @@ Return ONLY the JSON object. No markdown formatting. No explanation. Just the JS
       throw new Error('Empty response from Gemini API');
     }
 
-    // Clean the response text to ensure it's valid JSON
     let cleanText = responseText.trim();
-    
-    // Remove markdown code blocks if present
     if (cleanText.startsWith('```json')) {
       cleanText = cleanText.replace(/```json\n?/, '').replace(/```\n?$/, '');
     } else if (cleanText.startsWith('```')) {
       cleanText = cleanText.replace(/```\n?/, '').replace(/```\n?$/, '');
     }
     
-    // Parse the JSON response
     const analysisResults = JSON.parse(cleanText);
     
-    // Validate and provide defaults for required fields
     const validatedResults = {
       timeComplexity: analysisResults.timeComplexity || 'O(n)',
-      timeExplanation: analysisResults.timeExplanation || 'Analysis completed successfully',
+      timeExplanation: analysisResults.timeExplanation || 'Analysis completed',
       spaceComplexity: analysisResults.spaceComplexity || 'O(n)',
-      spaceExplanation: analysisResults.spaceExplanation || 'Analysis completed successfully',
+      spaceExplanation: analysisResults.spaceExplanation || 'Analysis completed',
       cyclomaticComplexity: analysisResults.cyclomaticComplexity || 1,
       halstead: {
         difficulty: analysisResults.halstead?.difficulty || 0,
@@ -141,31 +119,8 @@ Return ONLY the JSON object. No markdown formatting. No explanation. Just the JS
     
   } catch (error: any) {
     console.error('Analysis error:', error);
-    
-    // Handle specific error types
-    if (error.message?.includes('API key') || error.message?.includes('Invalid API key')) {
-      return NextResponse.json(
-        { error: 'Invalid or missing Gemini API key. Please check your GEMINI_API_KEY environment variable.' },
-        { status: 500 }
-      );
-    }
-    
-    if (error.message?.includes('404') || error.message?.includes('Model not found')) {
-      return NextResponse.json(
-        { error: 'Gemini model not available. Please check your API key and model configuration.' },
-        { status: 500 }
-      );
-    }
-    
-    if (error.message?.includes('quota')) {
-      return NextResponse.json(
-        { error: 'API quota exceeded. Please try again later or check your Google Cloud billing.' },
-        { status: 500 }
-      );
-    }
-    
     return NextResponse.json(
-      { error: error.message || 'Failed to analyze code. Please try again.' },
+      { error: error.message || 'Failed to analyze code' },
       { status: 500 }
     );
   }
