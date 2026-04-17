@@ -4,7 +4,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSimulationStore } from '@/store/useSimulationStore';
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
@@ -125,7 +124,6 @@ export default function AnalysisModal({ isOpen, onClose }: AnalysisModalProps) {
       const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
       if (!apiKey) throw new Error("Gemini API key not configured.");
       
-      const genAI = new GoogleGenerativeAI(apiKey);
       const stats = getCodeStats();
       
       const prompt = `You are an expert code reviewer. Provide a comprehensive analysis of the following ${playgroundLanguage} code.
@@ -179,19 +177,37 @@ ${userCode.substring(0, 3000)}
 
 Provide the analysis in clear markdown format with emojis for visual appeal. Be specific, actionable, and educational.`;
 
-      // FIXED: Move generationConfig to generateContent call
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
-      
-      const result = await model.generateContent({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.4,
-          maxOutputTokens: 2000,
-          topP: 0.95,
+      // Use fetch API directly to avoid SDK issues
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [{ text: prompt }]
+              }
+            ],
+            generationConfig: {
+              temperature: 0.4,
+              maxOutputTokens: 2000,
+              topP: 0.95,
+            }
+          }),
+          signal: abortControllerRef.current.signal,
         }
-      });
-      
-      const responseText = result.response.text();
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || `API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
       
       if (responseText) {
         setAnalysis(responseText);
@@ -207,10 +223,12 @@ Provide the analysis in clear markdown format with emojis for visual appeal. Be 
       let userFriendlyMessage = errorMessage;
       if (errorMessage.includes('404')) {
         userFriendlyMessage = "Model not available. Please check your API key.";
-      } else if (errorMessage.includes('API key')) {
+      } else if (errorMessage.includes('API key') || errorMessage.includes('403')) {
         userFriendlyMessage = "Invalid API key. Please check your environment variables.";
       } else if (errorMessage.includes('quota')) {
         userFriendlyMessage = "API quota exceeded. Please try again later.";
+      } else if (errorMessage.name === 'AbortError') {
+        return;
       }
       
       setAnalysisError(userFriendlyMessage);
@@ -244,9 +262,8 @@ Provide the analysis in clear markdown format with emojis for visual appeal. Be 
   return (
     <AnimatePresence>
       {isOpen && (
-        <div id="analysis-modal-backdrop" className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
           <motion.div
-            id="analysis-modal-container"
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -265,11 +282,11 @@ Provide the analysis in clear markdown format with emojis for visual appeal. Be 
               </div>
               <div className="flex items-center gap-2">
                 {analysis && !isAnalyzing && (
-                  <button id="copy-analysis-btn" onClick={copyToClipboard} className="relative p-2 rounded-lg hover:bg-white/5 text-text-secondary">
+                  <button onClick={copyToClipboard} className="relative p-2 rounded-lg hover:bg-white/5 text-text-secondary">
                     <span className="material-symbols-outlined text-lg">{copySuccess ? 'check' : 'content_copy'}</span>
                   </button>
                 )}
-                <button id="close-modal-btn" onClick={onClose} className="p-2 rounded-lg hover:bg-white/5 text-text-secondary">
+                <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/5 text-text-secondary">
                   <span className="material-symbols-outlined text-lg">close</span>
                 </button>
               </div>
@@ -286,7 +303,7 @@ Provide the analysis in clear markdown format with emojis for visual appeal. Be 
                         key={idx}
                         onClick={() => setActiveSection(section.title.toLowerCase())}
                         className={`w-full text-left px-3 py-2 rounded-lg transition-all text-[11px] font-medium flex items-center gap-2 ${
-                          activeSection === section.title.toLowerCase() ? `bg-${section.color}/10 text-${section.color}` : 'text-text-secondary hover:text-white'
+                          activeSection === section.title.toLowerCase() ? 'bg-primary/10 text-primary' : 'text-text-secondary hover:text-white'
                         }`}
                       >
                         <span className="material-symbols-outlined text-[14px]">{section.icon}</span>
@@ -304,7 +321,7 @@ Provide the analysis in clear markdown format with emojis for visual appeal. Be 
                     <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }} className="w-16 h-16 border-2 border-primary/30 border-t-primary rounded-full" />
                     <div className="text-center">
                       <p className="text-sm font-bold text-white uppercase tracking-widest animate-pulse">Analyzing Code...</p>
-                      <p className="text-[10px] text-text-secondary mt-1">Using Gemini 1.5 Pro AI</p>
+                      <p className="text-[10px] text-text-secondary mt-1">Using Gemini 1.5 Flash AI</p>
                     </div>
                   </div>
                 ) : (
@@ -342,7 +359,7 @@ Provide the analysis in clear markdown format with emojis for visual appeal. Be 
                   <span>{getCodeStats()?.functions || 0} functions</span>
                   <span>{getCodeStats()?.loops || 0} loops</span>
                 </div>
-                <div>Powered by Gemini 1.5 Pro</div>
+                <div>Powered by Gemini 1.5 Flash</div>
               </div>
             )}
           </motion.div>
