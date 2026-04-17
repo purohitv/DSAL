@@ -11,7 +11,7 @@ import { useCompiler } from "@/hooks/useCompiler";
 type ViewMode = 'visualizer' | 'memory' | 'canvas';
 type VisType = 'array' | 'stack' | 'queue' | 'tree' | 'graph';
 
-const CODE_TEMPLATE = \`#include <iostream>
+const CODE_TEMPLATE = `#include <iostream>
 using namespace std;
 
 int main() {
@@ -27,7 +27,7 @@ int main() {
     cout << "Sum = " << sum << "\\n";
     
     return 0;
-}\`;
+}`;
 
 export default function GlobalIDEPage() {
     const { setUserCode, setPlaygroundLanguage } = useSimulationStore();
@@ -159,19 +159,19 @@ export default function GlobalIDEPage() {
             <div className="flex bg-[#1c212c] p-0.5 rounded-md border border-[#3b4354] shadow-inner">
                 <button 
                     onClick={() => setViewMode('visualizer')}
-                    className={\`flex items-center gap-1.5 px-3 py-1 text-[10px] uppercase font-bold tracking-wider rounded transition-all \${viewMode === 'visualizer' ? 'bg-[#282e39] text-primary shadow-sm' : 'text-gray-500 hover:text-white'}\`}
+                    className={`flex items-center gap-1.5 px-3 py-1 text-[10px] uppercase font-bold tracking-wider rounded transition-all ${viewMode === 'visualizer' ? 'bg-[#282e39] text-primary shadow-sm' : 'text-gray-500 hover:text-white'}`}
                 >
                     <Layers size={12} /> Visual Engine
                 </button>
                 <button 
                     onClick={() => setViewMode('memory')}
-                    className={\`flex items-center gap-1.5 px-3 py-1 text-[10px] uppercase font-bold tracking-wider rounded transition-all \${viewMode === 'memory' ? 'bg-[#282e39] text-emerald-500 shadow-sm' : 'text-gray-500 hover:text-white'}\`}
+                    className={`flex items-center gap-1.5 px-3 py-1 text-[10px] uppercase font-bold tracking-wider rounded transition-all ${viewMode === 'memory' ? 'bg-[#282e39] text-emerald-500 shadow-sm' : 'text-gray-500 hover:text-white'}`}
                 >
                     <MemoryStick size={12} /> Code Memory
                 </button>
                 <button 
                     onClick={() => setViewMode('canvas')}
-                    className={\`flex items-center gap-1.5 px-3 py-1 text-[10px] uppercase font-bold tracking-wider rounded transition-all \${viewMode === 'canvas' ? 'bg-[#282e39] text-purple-400 shadow-sm' : 'text-gray-500 hover:text-white'}\`}
+                    className={`flex items-center gap-1.5 px-3 py-1 text-[10px] uppercase font-bold tracking-wider rounded transition-all ${viewMode === 'canvas' ? 'bg-[#282e39] text-purple-400 shadow-sm' : 'text-gray-500 hover:text-white'}`}
                 >
                     <PenTool size={12} /> Clean Grid
                 </button>
@@ -181,11 +181,11 @@ export default function GlobalIDEPage() {
             <div className="flex items-center gap-2">
                 <button
                     onClick={isRunning ? stopCode : handleRun}
-                    className={\`flex items-center gap-2 px-6 py-1.5 rounded-md text-xs font-black uppercase tracking-widest transition-all shadow-lg border \${
+                    className={`flex items-center gap-2 px-6 py-1.5 rounded-md text-xs font-black uppercase tracking-widest transition-all shadow-lg border ${
                         isRunning 
                         ? 'bg-red-600/20 text-red-500 border-red-500/50 hover:bg-red-600/30' 
                         : 'bg-primary text-white border-white/10 hover:bg-primary/90 shadow-[0_3px_0_rgb(88,13,164)] active:translate-y-[2px] active:shadow-none'
-                    }\`}
+                    }`}
                 >
                     {isRunning ? <Square size={14} /> : <Play size={14} fill="currentColor" />}
                     {isRunning ? "Stop" : "Compile & Run"}
