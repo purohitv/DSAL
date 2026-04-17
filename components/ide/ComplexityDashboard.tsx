@@ -185,9 +185,9 @@ export default function ComplexityDashboard() {
         "confidence": 0.0-1.0
       }`;
 
-      // Using Gemini 3.1 Flash Preview - Updated April 2026
+      // ✅ USING VERIFIED WORKING MODEL: gemini-2.5-flash (faster for this use case)
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-preview:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: {
@@ -331,108 +331,4 @@ export default function ComplexityDashboard() {
               </motion.div>
             )}
             <button onClick={() => setShowDetailedView(!showDetailedView)} className="px-2 py-0.5 bg-white/5 hover:bg-white/10 rounded text-[8px] font-black uppercase tracking-widest">
-              {showDetailedView ? 'Simple' : 'Detailed'}
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <motion.div whileHover={{ scale: 1.02 }} className="bg-gradient-to-br from-primary/10 to-transparent p-3 rounded-lg border border-primary/20 relative overflow-hidden group">
-            <p className="text-[8px] text-gray-500 uppercase font-bold mb-1 flex items-center gap-1">
-              <span className="material-symbols-outlined text-[12px]">schedule</span>
-              Time Complexity
-            </p>
-            <p className={`text-xl font-black tracking-tighter italic ${getComplexityColor(currentEstimate.time)}`}>
-              {currentEstimate.time}
-            </p>
-            <p className={`text-[8px] mt-1 ${timeRating.color}`}>{timeRating.label} Efficiency</p>
-            {currentEstimate.confidence && (
-              <div className="absolute bottom-2 right-2">
-                <div className="w-6 h-6 rounded-full border-2 border-primary/30 flex items-center justify-center">
-                  <span className="text-[8px] font-black text-primary">{Math.round(currentEstimate.confidence * 100)}%</span>
-                </div>
-              </div>
-            )}
-          </motion.div>
-
-          <motion.div whileHover={{ scale: 1.02 }} className="bg-gradient-to-br from-accent-mint/10 to-transparent p-3 rounded-lg border border-accent-mint/20 relative overflow-hidden group">
-            <p className="text-[8px] text-gray-500 uppercase font-bold mb-1 flex items-center gap-1">
-              <span className="material-symbols-outlined text-[12px]">memory</span>
-              Space Complexity
-            </p>
-            <p className={`text-xl font-black tracking-tighter italic ${getComplexityColor(currentEstimate.space)}`}>
-              {currentEstimate.space}
-            </p>
-            <p className={`text-[8px] mt-1 ${spaceRating.color}`}>{spaceRating.label} Memory Usage</p>
-          </motion.div>
-        </div>
-
-        {currentEstimate.reasoning && (
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-white/5 p-2 rounded-lg border border-white/10">
-            <div className="flex items-start gap-2">
-              <span className="material-symbols-outlined text-[12px] text-primary mt-0.5">psychology</span>
-              <div>
-                <p className="text-[7px] text-gray-500 uppercase font-bold mb-1">Analysis Reasoning</p>
-                <p className="text-[9px] text-slate-300 font-mono leading-relaxed">{currentEstimate.reasoning}</p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        <AnimatePresence>
-          {showDetailedView && (currentEstimate.timeDetails || currentEstimate.spaceDetails) && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-2 overflow-hidden">
-              {currentEstimate.timeDetails && (
-                <div className="bg-primary/5 p-2 rounded border-l-2 border-primary">
-                  <p className="text-[7px] text-primary uppercase font-bold mb-1">Time Analysis</p>
-                  <p className="text-[8px] text-slate-400 font-mono">{currentEstimate.timeDetails}</p>
-                </div>
-              )}
-              {currentEstimate.spaceDetails && (
-                <div className="bg-accent-mint/5 p-2 rounded border-l-2 border-accent-mint">
-                  <p className="text-[7px] text-accent-mint uppercase font-bold mb-1">Space Analysis</p>
-                  <p className="text-[8px] text-slate-400 font-mono">{currentEstimate.spaceDetails}</p>
-                </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {complexityData.length > 5 && (
-          <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-lg p-2">
-            <div className="flex items-start gap-2">
-              <span className="material-symbols-outlined text-[12px] text-yellow-500">lightbulb</span>
-              <div>
-                <p className="text-[7px] text-yellow-500 uppercase font-bold mb-1">Performance Insight</p>
-                <p className="text-[8px] text-slate-400">
-                  {metrics.growthRate > 10 
-                    ? "⚠️ Operations growing rapidly. Consider optimizing your algorithm for better performance."
-                    : metrics.growthRate > 5
-                    ? "📈 Moderate growth detected. Could be optimized for larger inputs."
-                    : "✅ Good performance scaling. Your algorithm handles increased input size efficiently."}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <p className="text-[8px] text-gray-500 text-center italic">
-          {aiEstimate ? "✨ AI-powered complexity analysis using Gemini 3.1 Flash" : "📊 Heuristic analysis based on execution trace data"}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function MetricCard({ label, value, suffix = '', icon, color }: { label: string; value: number; suffix?: string; icon: string; color: 'primary' | 'accent' | 'info' | 'success' }) {
-  const colors = { primary: 'text-primary', accent: 'text-accent-mint', info: 'text-cyan-400', success: 'text-green-400' };
-  return (
-    <div className="bg-black/20 rounded-lg p-2 border border-white/5">
-      <div className="flex items-center gap-1 mb-1">
-        <span className={`material-symbols-outlined text-[10px] ${colors[color]} opacity-60`}>{icon}</span>
-        <p className="text-[7px] text-gray-500 uppercase font-bold">{label}</p>
-      </div>
-      <p className={`text-sm font-black ${colors[color]}`}>{value.toLocaleString()}{suffix}</p>
-    </div>
-  );
-}
+              {showDetailedView ? 'Simple' : '
