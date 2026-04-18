@@ -4,7 +4,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI, Type } from '@google/genai';
 import Editor from '@monaco-editor/react';
 
 interface AnalysisResults {
@@ -121,10 +121,12 @@ export default function ComplexityAnalysisDashboard() {
   const [fontSize, setFontSize] = useState(14);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // Handle example selection
   useEffect(() => {
     setCode(codeExamples[selectedExample as keyof typeof codeExamples]);
   }, [selectedExample]);
 
+  // Get complexity color
   const getComplexityColor = (complexity: string): string => {
     if (complexity.includes('O(1)')) return 'text-green-400';
     if (complexity.includes('O(log n)')) return 'text-cyan-400';
@@ -135,6 +137,7 @@ export default function ComplexityAnalysisDashboard() {
     return 'text-white';
   };
 
+  // Get severity color
   const getSeverityColor = (severity: string): string => {
     switch (severity) {
       case 'high': return 'text-red-400 border-red-500/30 bg-red-500/10';
@@ -146,7 +149,12 @@ export default function ComplexityAnalysisDashboard() {
 
   const handleAnalyze = useCallback(async () => {
     if (!code.trim()) return;
-    if (abortControllerRef.current) abortControllerRef.current.abort();
+    
+    // Cancel previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
     abortControllerRef.current = new AbortController();
     
     setIsAnalyzing(true);
@@ -155,81 +163,95 @@ export default function ComplexityAnalysisDashboard() {
     
     try {
       const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-      if (!apiKey) throw new Error("Gemini API key is missing.");
+      if (!apiKey) {
+        throw new Error("Gemini API key is missing. Please check your environment variables.");
+      }
 
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" }); // ✅ Fixed: removed generationConfig from here
+      const ai = new GoogleGenAI({ apiKey });
       
-      const prompt = `You are an expert code analyst. Analyze the following ${language} code and provide a comprehensive complexity analysis.
+      const response = await ai.models.generateContent({
+        model: "gemini-flash-latest",
+        contents: `You are an expert code analyst. Analyze the following ${language} code concisely.
 
-Code:
+Code to analyze:
 \`\`\`${language.toLowerCase()}
 ${code.substring(0, 3000)}
 \`\`\`
 
-IMPORTANT: Respond with ONLY valid JSON, no markdown formatting, no explanation. Use this exact structure:
+Respond ONLY with a clean JSON object exactly in this format (keep explanations brief to avoid truncation):
 {
   "timeComplexity": "O(...)",
-  "timeExplanation": "brief explanation",
+  "timeExplanation": "Brief explanation...",
   "spaceComplexity": "O(...)",
-  "spaceExplanation": "brief explanation",
+  "spaceExplanation": "Brief explanation...",
   "cyclomaticComplexity": number,
   "cognitiveComplexity": number,
-  "halstead": {
-    "difficulty": number,
-    "effort": number,
-    "bugs": number,
-    "volume": number,
-    "vocabulary": number
-  },
-  "bottlenecks": [
-    {
-      "line": number,
-      "issue": "description",
-      "severity": "low|medium|high",
-      "suggestion": "fix"
-    }
-  ],
-  "recommendations": ["recommendation1", "recommendation2"]
-}`;
-
-      // ✅ Fixed: moved generationConfig to generateContent call
-      const result = await model.generateContent({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.3,
-          maxOutputTokens: 2000,
-          topP: 0.95,
+  "halstead": { "difficulty": number, "effort": number, "bugs": number, "volume": number, "vocabulary": number },
+  "bottlenecks": [ { "line": number, "issue": "Brief text", "severity": "low|medium|high", "suggestion": "Brief text" } ],
+  "recommendations": ["Brief tip"]
+}`,
+        config: {
+          temperature: 0.1, // Lower temperature for more stable JSON
+          maxOutputTokens: 2048
         }
       });
+
+      const resultText = response.text || "";
       
-      const response = result.response;
-      const resultText = response.text();
-      
-      if (resultText) {
-        // Clean the response - remove any markdown code blocks
-        let cleanText = resultText.trim();
-        if (cleanText.startsWith('```json')) {
-          cleanText = cleanText.replace(/```json\n?/, '').replace(/```\n?$/, '');
-        } else if (cleanText.startsWith('```')) {
-          cleanText = cleanText.replace(/```\n?/, '').replace(/```\n?$/, '');
+      // Multi-step cleaning and repair
+      let cleanJson = resultText.trim();
+      const jsonMatch = cleanJson.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      if (jsonMatch) {
+        cleanJson = jsonMatch[1].trim();
+      }
+
+      const repairJson = (json: string) => {
+        let repaired = json.trim();
+        // If it starts with { but doesn't end with }, try to fix it
+        if (repaired.startsWith('{') && !repaired.endsWith('}')) {
+          // Remove trailing comma if it exists after characters
+          repaired = repaired.replace(/,(\s*)$/, '$1');
+          
+          // Count open/close braces
+          const openBraces = (repaired.match(/{/g) || []).length;
+          const closeBraces = (repaired.match(/}/g) || []).length;
+          
+          // Check if we are inside a string
+          let insideString = false;
+          let escaped = false;
+          for (let i = 0; i < repaired.length; i++) {
+            if (repaired[i] === '"' && !escaped) insideString = !insideString;
+            escaped = repaired[i] === '\\' && !escaped;
+          }
+          
+          if (insideString) repaired += '"';
+          
+          // Add missing braces/brackets
+          const openSquares = (repaired.match(/\[/g) || []).length;
+          const closeSquares = (repaired.match(/]/g) || []).length;
+          
+          for (let i = 0; i < openSquares - closeSquares; i++) repaired += ']';
+          for (let i = 0; i < openBraces - closeBraces; i++) repaired += '}';
         }
-        
-        const parsedResults = JSON.parse(cleanText);
-        setResults(parsedResults);
+        return repaired;
+      };
+
+      if (cleanJson) {
+        try {
+          const repairedJson = repairJson(cleanJson);
+          const parsedResult = JSON.parse(repairedJson);
+          setResults(parsedResult);
+        } catch (parseErr) {
+          console.error("Analysis JSON Parse Error:", parseErr, "Raw:", resultText);
+          throw new Error("Failed to parse analysis results. The AI response was either malformed or too long.");
+        }
       } else {
-        throw new Error("Failed to generate analysis.");
+        throw new Error("Failed to generate analysis. Please try again.");
       }
     } catch (err: any) {
       console.error("Analysis error:", err);
       if (err.name !== 'AbortError') {
-        if (err.message.includes('404')) {
-          setError("Model not available. Please check your API key and try again.");
-        } else if (err.message.includes('API key')) {
-          setError("Invalid API key. Please check your environment variables.");
-        } else {
-          setError(err.message || "An error occurred during analysis.");
-        }
+        setError(err.message || "An error occurred during analysis. Please check your API key and try again.");
       }
     } finally {
       setIsAnalyzing(false);
@@ -239,10 +261,13 @@ IMPORTANT: Respond with ONLY valid JSON, no markdown formatting, no explanation.
   // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + Enter to analyze
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
         handleAnalyze();
       }
+      
+      // Ctrl/Cmd + 1-5 to load examples
       if ((e.ctrlKey || e.metaKey) && e.key >= '1' && e.key <= '5') {
         e.preventDefault();
         const examples = ['bubbleSort', 'quickSort', 'binarySearch', 'fibonacci', 'mergeSort'];
@@ -267,14 +292,20 @@ IMPORTANT: Respond with ONLY valid JSON, no markdown formatting, no explanation.
       >
         <div className="flex items-center gap-4">
           <Link href="/dashboard" className="text-text-secondary hover:text-white transition-colors group">
-            <motion.div whileHover={{ x: -4 }} className="flex items-center gap-2">
+            <motion.div 
+              whileHover={{ x: -4 }}
+              className="flex items-center gap-2"
+            >
               <span className="material-symbols-outlined text-xl">arrow_back</span>
               <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Back</span>
             </motion.div>
           </Link>
           <div className="h-6 w-px bg-border-dark" />
           <div className="flex items-center gap-3">
-            <motion.div whileHover={{ rotate: 90 }} className="bg-gradient-to-br from-primary to-secondary p-2 rounded-lg shadow-lg">
+            <motion.div 
+              whileHover={{ rotate: 90 }}
+              className="bg-gradient-to-br from-primary to-secondary p-2 rounded-lg shadow-lg"
+            >
               <span className="material-symbols-outlined text-white text-xl">speed</span>
             </motion.div>
             <div>
@@ -285,15 +316,18 @@ IMPORTANT: Respond with ONLY valid JSON, no markdown formatting, no explanation.
         </div>
         
         <div className="flex items-center gap-3">
+          {/* Theme toggle */}
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             className="p-2 rounded-lg hover:bg-white/5 transition-colors"
+            title="Toggle theme"
           >
             <span className="material-symbols-outlined text-lg text-text-secondary">
               {theme === 'dark' ? 'dark_mode' : 'light_mode'}
             </span>
           </button>
           
+          {/* Font size control */}
           <div className="flex items-center gap-1 bg-white/5 rounded-lg px-2 py-1">
             <span className="material-symbols-outlined text-xs text-text-secondary">text_increase</span>
             <input
@@ -306,6 +340,7 @@ IMPORTANT: Respond with ONLY valid JSON, no markdown formatting, no explanation.
             />
           </div>
           
+          {/* Analyze button */}
           <motion.button 
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -348,6 +383,7 @@ IMPORTANT: Respond with ONLY valid JSON, no markdown formatting, no explanation.
             </div>
             
             <div className="flex items-center gap-2">
+              {/* Example selector */}
               <select 
                 value={selectedExample}
                 onChange={(e) => setSelectedExample(e.target.value)}
@@ -360,6 +396,7 @@ IMPORTANT: Respond with ONLY valid JSON, no markdown formatting, no explanation.
                 <option value="mergeSort">Merge Sort (O(n log n))</option>
               </select>
               
+              {/* Language selector */}
               <select 
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
@@ -598,7 +635,7 @@ IMPORTANT: Respond with ONLY valid JSON, no markdown formatting, no explanation.
           </div>
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[10px]">data_usage</span>
-            <span>Gemini 1.5 Pro</span>
+            <span>Gemini 1.5 Flash</span>
           </div>
         </div>
         <div className="flex items-center gap-4">
