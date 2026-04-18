@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSimulationStore } from '@/store/useSimulationStore';
+import { GoogleGenAI } from "@google/genai";
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
@@ -21,7 +22,7 @@ interface AnalysisSection {
 }
 
 export default function AnalysisModal({ isOpen, onClose }: AnalysisModalProps) {
-  const { userCode, playgroundLanguage, complexityData } = useSimulationStore();
+  const { userCode, playgroundLanguage, complexityData, currentStep } = useSimulationStore();
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
@@ -30,6 +31,7 @@ export default function AnalysisModal({ isOpen, onClose }: AnalysisModalProps) {
   const abortControllerRef = useRef<AbortController | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
+  // Extract code statistics
   const getCodeStats = useCallback(() => {
     if (!userCode) return null;
     
@@ -51,6 +53,7 @@ export default function AnalysisModal({ isOpen, onClose }: AnalysisModalProps) {
     };
   }, [userCode, complexityData]);
 
+  // Generate sections from markdown analysis
   const parseSections = useCallback((markdown: string): AnalysisSection[] => {
     const sections: AnalysisSection[] = [];
     const lines = markdown.split('\n');
@@ -58,7 +61,6 @@ export default function AnalysisModal({ isOpen, onClose }: AnalysisModalProps) {
     let currentContent = '';
     
     const sectionMap: Record<string, { icon: string; color: string }> = {
-      'overview': { icon: 'analytics', color: 'primary' },
       'summary': { icon: 'description', color: 'primary' },
       'time complexity': { icon: 'schedule', color: 'primary' },
       'space complexity': { icon: 'memory', color: 'accent-mint' },
@@ -66,15 +68,15 @@ export default function AnalysisModal({ isOpen, onClose }: AnalysisModalProps) {
       'optimization': { icon: 'rocket', color: 'cyan-400' },
       'bugs': { icon: 'bug_report', color: 'red-400' },
       'suggestions': { icon: 'lightbulb', color: 'yellow-500' },
-      'best practices': { icon: 'thumb_up', color: 'green-400' }
+      'overview': { icon: 'analytics', color: 'primary' }
     };
     
     for (const line of lines) {
       const lowerLine = line.toLowerCase();
       let matched = false;
       
-      for (const [key] of Object.entries(sectionMap)) {
-        if (lowerLine.includes(key) && (line.startsWith('#') || line.startsWith('**') || line.includes('📋') || line.includes('⏱️'))) {
+      for (const [key, config] of Object.entries(sectionMap)) {
+        if (lowerLine.includes(key) && (line.startsWith('#') || line.startsWith('**'))) {
           if (currentSection && currentContent) {
             sections.push({
               title: currentSection,
@@ -83,19 +85,19 @@ export default function AnalysisModal({ isOpen, onClose }: AnalysisModalProps) {
               color: sectionMap[currentSection.toLowerCase()]?.color || 'text-secondary'
             });
           }
-          let cleanTitle = key.charAt(0).toUpperCase() + key.slice(1);
-          if (lowerLine.includes('📋')) cleanTitle = 'Overview';
-          if (lowerLine.includes('⏱️')) cleanTitle = 'Time Complexity';
-          if (lowerLine.includes('💾')) cleanTitle = 'Space Complexity';
-          
-          currentSection = cleanTitle;
+          currentSection = key.charAt(0).toUpperCase() + key.slice(1);
           currentContent = '';
           matched = true;
           break;
         }
       }
-      if (!matched) currentContent += line + '\n';
+      
+      if (!matched) {
+        currentContent += line + '\n';
+      }
     }
+    
+    // Add last section
     if (currentSection && currentContent) {
       sections.push({
         title: currentSection,
@@ -104,16 +106,24 @@ export default function AnalysisModal({ isOpen, onClose }: AnalysisModalProps) {
         color: sectionMap[currentSection.toLowerCase()]?.color || 'text-secondary'
       });
     }
+    
     return sections;
   }, []);
 
+  // AI-powered code analysis
   const analyzeCode = useCallback(async () => {
-    if (!isOpen || !userCode?.trim()) {
-      if (isOpen) setAnalysis("## No Code Provided\n\nPlease write or paste some code to analyze.");
+    if (!isOpen) return;
+    
+    if (!userCode || userCode.trim().length === 0) {
+      setAnalysis("## No Code Provided\n\nPlease write or paste some code to analyze.");
       return;
     }
 
-    if (abortControllerRef.current) abortControllerRef.current.abort();
+    // Cancel previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
     abortControllerRef.current = new AbortController();
     
     setIsAnalyzing(true);
@@ -122,17 +132,21 @@ export default function AnalysisModal({ isOpen, onClose }: AnalysisModalProps) {
 
     try {
       const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-      if (!apiKey) throw new Error("Gemini API key not configured.");
+      if (!apiKey) {
+        throw new Error("Gemini API key not configured");
+      }
       
+      const ai = new GoogleGenAI({ apiKey });
       const stats = getCodeStats();
       
       const prompt = `You are an expert code reviewer. Provide a comprehensive analysis of the following ${playgroundLanguage} code.
 
 Code Statistics:
-- Total lines: ${stats?.totalLines || 0}
+- Total lines: ${stats?.totalLines || 0} (${stats?.codeLines || 0} actual code, ${stats?.commentLines || 0} comments)
 - Functions: ${stats?.functions || 0}
 - Loops: ${stats?.loops || 0}
 - Conditionals: ${stats?.conditionals || 0}
+- Execution steps tracked: ${stats?.complexity || 0}
 
 Please provide a detailed analysis with the following sections (use markdown formatting):
 
@@ -172,91 +186,71 @@ Brief summary of what the code does and its main purpose.
 
 Code to analyze:
 \`\`\`${playgroundLanguage}
-${userCode.substring(0, 3000)}
+${userCode.substring(0, 3000)} // Limit for API
 \`\`\`
 
 Provide the analysis in clear markdown format with emojis for visual appeal. Be specific, actionable, and educational.`;
 
-      // ✅ USING VERIFIED WORKING MODEL: gemini-2.5-pro
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [{ text: prompt }]
-              }
-            ],
-            generationConfig: {
-              temperature: 0.4,
-              maxOutputTokens: 2000,
-              topP: 0.95,
-            }
-          }),
-          signal: abortControllerRef.current.signal,
+      const response = await ai.models.generateContent({
+        model: "gemini-flash-latest",
+        contents: prompt,
+        config: {
+          temperature: 0.4,
+          maxOutputTokens: 4096,
+          topP: 0.95
         }
-      );
+      });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || `API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      
-      if (responseText) {
-        setAnalysis(responseText);
-        setAnalysisError(null);
-      } else {
-        throw new Error("No response from Gemini API");
-      }
+      const analysisText = response.text || "Analysis generated successfully.";
+      setAnalysis(analysisText);
+      setAnalysisError(null);
       
     } catch (err) {
       console.error("AI Analysis failed:", err);
       const errorMessage = err instanceof Error ? err.message : "Analysis failed";
-      
-      let userFriendlyMessage = errorMessage;
-      if (errorMessage.includes('404')) {
-        userFriendlyMessage = "Model not available. Using gemini-2.5-pro which is verified to work.";
-      } else if (errorMessage.includes('API key') || errorMessage.includes('403')) {
-        userFriendlyMessage = "Invalid API key. Please check your environment variables.";
-      } else if (errorMessage.includes('quota')) {
-        userFriendlyMessage = "API quota exceeded. Please try again later.";
-      } else if (errorMessage.name === 'AbortError') {
-        return;
-      }
-      
-      setAnalysisError(userFriendlyMessage);
-      setAnalysis(`## Analysis Failed\n\n**Error:** ${userFriendlyMessage}\n\nPlease check your configuration and try again.`);
+      setAnalysisError(errorMessage);
+      setAnalysis(`## Analysis Failed\n\n**Error:** ${errorMessage}\n\nPlease check your API key configuration and try again.`);
     } finally {
       setIsAnalyzing(false);
     }
   }, [isOpen, userCode, playgroundLanguage, getCodeStats]);
 
+  // Trigger analysis when modal opens
   useEffect(() => {
-    if (isOpen) analyzeCode();
-    const handleEscape = (e: KeyboardEvent) => { if (e.key === 'Escape' && isOpen) onClose(); };
+    if (isOpen) {
+      analyzeCode();
+    }
+    
+    // Handle escape key
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    
     window.addEventListener('keydown', handleEscape);
     return () => {
       window.removeEventListener('keydown', handleEscape);
-      if (abortControllerRef.current) abortControllerRef.current.abort();
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
     };
   }, [isOpen, analyzeCode, onClose]);
 
+  // Copy analysis to clipboard
   const copyToClipboard = useCallback(async () => {
     if (!analysis) return;
+    
     try {
       await navigator.clipboard.writeText(analysis);
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 2000);
-    } catch (err) { console.error('Failed to copy:', err); }
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
   }, [analysis]);
 
+  // Parse sections for navigation
   const sections = analysis ? parseSections(analysis) : [];
 
   return (
@@ -264,38 +258,70 @@ Provide the analysis in clear markdown format with emojis for visual appeal. Be 
       {isOpen && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
           <motion.div
+            ref={modalRef}
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ type: 'spring', damping: 25 }}
             className="bg-gradient-to-br from-background-dark to-surface-darker border border-white/10 rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-surface-darker/50">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-surface-darker/50 backdrop-blur-sm">
               <div className="flex items-center gap-3">
-                <div className="relative w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center border border-primary/30">
-                  <span className="material-symbols-outlined text-primary text-xl">analytics</span>
+                <div className="relative">
+                  <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl" />
+                  <div className="relative w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center border border-primary/30">
+                    <span className="material-symbols-outlined text-primary text-xl">analytics</span>
+                  </div>
                 </div>
                 <div>
                   <h2 className="text-xl font-black text-white tracking-tight">Code Analysis</h2>
-                  <p className="text-[10px] text-text-secondary uppercase tracking-widest">AI-Powered Insights</p>
+                  <p className="text-[10px] text-text-secondary uppercase tracking-widest flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[12px]">auto_awesome</span>
+                    AI-Powered Insights
+                  </p>
                 </div>
               </div>
+              
               <div className="flex items-center gap-2">
+                {/* Copy button */}
                 {analysis && !isAnalyzing && (
-                  <button onClick={copyToClipboard} className="relative p-2 rounded-lg hover:bg-white/5 text-text-secondary">
-                    <span className="material-symbols-outlined text-lg">{copySuccess ? 'check' : 'content_copy'}</span>
+                  <button
+                    onClick={copyToClipboard}
+                    className="relative p-2 rounded-lg hover:bg-white/5 text-text-secondary hover:text-white transition-colors"
+                    title="Copy analysis"
+                  >
+                    <span className="material-symbols-outlined text-lg">
+                      {copySuccess ? 'check' : 'content_copy'}
+                    </span>
+                    {copySuccess && (
+                      <motion.span
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-primary rounded text-[8px] font-black whitespace-nowrap"
+                      >
+                        Copied!
+                      </motion.span>
+                    )}
                   </button>
                 )}
-                <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/5 text-text-secondary">
+                
+                {/* Close button */}
+                <button 
+                  onClick={onClose}
+                  className="p-2 rounded-lg hover:bg-white/5 text-text-secondary hover:text-white transition-colors"
+                  title="Close (Esc)"
+                >
                   <span className="material-symbols-outlined text-lg">close</span>
                 </button>
               </div>
             </div>
             
+            {/* Content area with sidebar navigation */}
             <div className="flex-1 overflow-hidden flex">
-              {/* Sidebar */}
+              {/* Sidebar navigation (visible when sections exist) */}
               {sections.length > 0 && !isAnalyzing && (
-                <div className="w-48 border-r border-white/10 bg-surface-darker/30 overflow-y-auto">
+                <div className="w-48 border-r border-white/10 bg-surface-darker/30 overflow-y-auto custom-scrollbar">
                   <div className="p-3 space-y-1">
                     <p className="text-[8px] text-text-secondary uppercase tracking-wider mb-2 px-2">Sections</p>
                     {sections.map((section, idx) => (
@@ -303,7 +329,9 @@ Provide the analysis in clear markdown format with emojis for visual appeal. Be 
                         key={idx}
                         onClick={() => setActiveSection(section.title.toLowerCase())}
                         className={`w-full text-left px-3 py-2 rounded-lg transition-all text-[11px] font-medium flex items-center gap-2 ${
-                          activeSection === section.title.toLowerCase() ? 'bg-primary/10 text-primary' : 'text-text-secondary hover:text-white'
+                          activeSection === section.title.toLowerCase()
+                            ? `bg-${section.color}/10 text-${section.color} border-l-2 border-${section.color}`
+                            : 'text-text-secondary hover:text-white hover:bg-white/5'
                         }`}
                       >
                         <span className="material-symbols-outlined text-[14px]">{section.icon}</span>
@@ -314,52 +342,134 @@ Provide the analysis in clear markdown format with emojis for visual appeal. Be 
                 </div>
               )}
               
-              {/* Content */}
-              <div className="flex-1 overflow-y-auto p-6">
+              {/* Main content */}
+              <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
                 {isAnalyzing ? (
                   <div className="flex flex-col items-center justify-center h-full gap-6">
-                    <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }} className="w-16 h-16 border-2 border-primary/30 border-t-primary rounded-full" />
+                    <div className="relative">
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                        className="w-16 h-16 border-2 border-primary/30 border-t-primary rounded-full"
+                      />
+                      <motion.div
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ duration: 1, repeat: Infinity }}
+                        className="absolute inset-0 flex items-center justify-center"
+                      >
+                        <span className="material-symbols-outlined text-2xl text-primary">auto_awesome</span>
+                      </motion.div>
+                    </div>
                     <div className="text-center">
-                      <p className="text-sm font-bold text-white uppercase tracking-widest animate-pulse">Analyzing Code...</p>
-                      <p className="text-[10px] text-text-secondary mt-1">Using Gemini 2.5 Pro AI</p>
+                      <p className="text-sm font-bold text-white uppercase tracking-widest animate-pulse">
+                        Analyzing Code...
+                      </p>
+                      <p className="text-[10px] text-text-secondary mt-1">
+                        This may take a few seconds
+                      </p>
                     </div>
                   </div>
                 ) : (
                   <div className="prose prose-invert prose-sm max-w-none">
-                    <Markdown 
-                      remarkPlugins={[remarkGfm]}
-                      rehypePlugins={[rehypeHighlight]}
-                      components={{
-                        code: ({ className, children, ...props }) => {
-                          const match = /language-(\w+)/.exec(className || '');
-                          return !match ? (
-                            <code className="px-1.5 py-0.5 bg-primary/10 rounded text-accent-mint text-[11px] font-mono">
+                    <div className="markdown-body">
+                      <Markdown 
+                        remarkPlugins={[remarkGfm]}
+                        rehypePlugins={[rehypeHighlight]}
+                        components={{
+                          h1: ({ children }) => (
+                            <h1 className="text-2xl font-black mt-6 mb-4 pb-2 border-b border-white/10 flex items-center gap-2">
                               {children}
-                            </code>
-                          ) : (
-                            <pre className="bg-[#0d1117] border border-white/10 rounded-lg p-3 overflow-x-auto">
-                              <code className={className}>{children}</code>
-                            </pre>
-                          );
-                        }
-                      }}
-                    >
-                      {analysis || "## Analysis Complete\n\nNo content generated."}
-                    </Markdown>
+                            </h1>
+                          ),
+                          h2: ({ children }) => {
+                            const text = String(children);
+                            const emoji = text.match(/[📋⏱️💾⚠️🚀🐛💡]/)?.[0] || '';
+                            const title = text.replace(/[📋⏱️💾⚠️🚀🐛💡]/g, '').trim();
+                            return (
+                              <h2 className="text-lg font-bold mt-5 mb-3 text-primary flex items-center gap-2">
+                                {emoji && <span className="text-xl">{emoji}</span>}
+                                {title}
+                              </h2>
+                            );
+                          },
+                          h3: ({ children }) => (
+                            <h3 className="text-md font-bold mt-4 mb-2 text-accent-mint">
+                              {children}
+                            </h3>
+                          ),
+                          code: ({ className, children }) => {
+                            const match = /language-(\w+)/.exec(className || '');
+                            if (!match) {
+                              return (
+                                <code className="px-1.5 py-0.5 bg-primary/10 rounded text-accent-mint text-[11px] font-mono">
+                                  {children}
+                                </code>
+                              );
+                            }
+                            return (
+                              <pre className="bg-[#0d1117] border border-white/10 rounded-lg p-3 overflow-x-auto">
+                                <code className={className}>
+                                  {children}
+                                </code>
+                              </pre>
+                            );
+                          },
+                          blockquote: ({ children }) => (
+                            <blockquote className="border-l-4 border-primary pl-4 py-2 my-3 bg-primary/5 rounded-r">
+                              {children}
+                            </blockquote>
+                          ),
+                          ul: ({ children }) => (
+                            <ul className="space-y-1 my-2 list-disc pl-5">
+                              {children}
+                            </ul>
+                          ),
+                          li: ({ children }) => (
+                            <li className="text-text-secondary text-sm">
+                              {children}
+                            </li>
+                          ),
+                          p: ({ children }) => (
+                            <p className="text-text-secondary text-sm leading-relaxed my-2">
+                              {children}
+                            </p>
+                          ),
+                          a: ({ href, children }) => (
+                            <a href={href} className="text-primary hover:text-primary-light underline" target="_blank" rel="noopener noreferrer">
+                              {children}
+                            </a>
+                          ),
+                        }}
+                      >
+                        {analysis || "## Analysis Complete\n\nNo content generated."}
+                      </Markdown>
+                    </div>
                   </div>
                 )}
               </div>
             </div>
             
-            {/* Footer */}
+            {/* Footer with code stats */}
             {!isAnalyzing && userCode && (
               <div className="px-6 py-2 border-t border-white/10 bg-surface-darker/30 flex justify-between items-center text-[8px] text-text-secondary">
                 <div className="flex gap-3">
-                  <span>{getCodeStats()?.codeLines || 0} lines</span>
-                  <span>{getCodeStats()?.functions || 0} functions</span>
-                  <span>{getCodeStats()?.loops || 0} loops</span>
+                  <span className="flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[10px]">code</span>
+                    {getCodeStats()?.codeLines} lines
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[10px]">function</span>
+                    {getCodeStats()?.functions} functions
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[10px]">loop</span>
+                    {getCodeStats()?.loops} loops
+                  </span>
                 </div>
-                <div>Powered by Gemini 2.5 Pro</div>
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[10px]">auto_awesome</span>
+                  <span>Powered by Gemini AI</span>
+                </div>
               </div>
             )}
           </motion.div>
