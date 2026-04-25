@@ -35,6 +35,7 @@ Bubble Sort is a simple sorting algorithm that repeatedly steps through the list
             `,
             videoUrl: 'https://www.youtube.com/embed/xli_Fi7CuzA',
             order: 1,
+            lessonId: 'array-reversal', // Linked to Array Reversal for demonstration
             quiz: {
               create: [
                 {
@@ -72,6 +73,7 @@ Quick Sort is a highly efficient sorting algorithm and is based on partitioning 
             `,
             videoUrl: 'https://www.youtube.com/embed/Hoixgm4-P4M',
             order: 2,
+            lessonId: 'array-reversal', // Also linked here for now
             quiz: {
               create: [
                 {
@@ -115,6 +117,7 @@ Dijkstra's algorithm is an algorithm for finding the shortest paths between node
             `,
             videoUrl: 'https://www.youtube.com/embed/XB4MIexjvY0',
             order: 1,
+            lessonId: 'bst-insertion', // Linked for now as bst-insertion is a graph/tree lesson
             quiz: {
               create: [
                 {

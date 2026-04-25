@@ -1213,12 +1213,12 @@ export default function ArrayVisualization() {
         showTimeline={false}
         extraControls={controls}
         operations={[
-          { name: 'Insert', onClick: handleInsert, icon: <Plus size={14} />, shortcut: 'I' },
-          { name: 'Delete', onClick: handleDelete, icon: <Trash2 size={14} />, shortcut: 'D' },
-          { name: 'Search', onClick: handleSearch, icon: <Search size={14} />, shortcut: 'S' },
-          { name: 'Get', onClick: handleGet, icon: <Zap size={14} />, shortcut: 'G' },
-          { name: 'Traverse', onClick: handleTraverse, icon: <ArrowRight size={14} />, shortcut: 'T' },
-          { name: 'Reset', onClick: handleReset, icon: <RefreshCw size={14} />, shortcut: 'R' },
+          { name: 'Insert', onClick: handleInsert, icon: <Plus size={14} /> },
+          { name: 'Delete', onClick: handleDelete, icon: <Trash2 size={14} /> },
+          { name: 'Search', onClick: handleSearch, icon: <Search size={14} /> },
+          { name: 'Get', onClick: handleGet, icon: <Zap size={14} /> },
+          { name: 'Traverse', onClick: handleTraverse, icon: <ArrowRight size={14} /> },
+          { name: 'Reset', onClick: handleReset, icon: <RefreshCw size={14} /> },
         ]}
         leftPanel={{ title: 'Source View', subtitle: 'array.cpp', icon: 'code', content: codePanel }}
         centerPanel={{ title: 'Simulation Stage', subtitle: 'Array Memory Visualization', icon: 'science', content: vizPanel }}

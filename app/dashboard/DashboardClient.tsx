@@ -46,6 +46,7 @@ export default function DashboardClient({ user, snippets, stats, modules }: any)
               whileHover={{ rotate: 180 }}
               className="bg-gradient-to-br from-primary to-secondary p-3 rounded-2xl shadow-xl cursor-pointer"
             >
+              <img src="/logo.png" alt="DSAL Logo" className="w-6 h-6 object-contain" />
             </motion.div>
             <div className="flex flex-col">
               <h1 className="text-white text-2xl font-black leading-none tracking-tighter group-hover:text-primary transition-colors italic uppercase">DSAL</h1>
@@ -90,14 +91,11 @@ export default function DashboardClient({ user, snippets, stats, modules }: any)
             <p className="px-4 text-[11px] font-black text-secondary uppercase tracking-[0.3em] mb-4 opacity-40">Simulation Modules</p>
             <div className="space-y-2">
               {[
-                { name: 'Array Data Structure', href: '/ide/array/1', icon: 'view_column', color: 'text-amber-400' },
                 { name: 'Stack Data Structure', href: '/ide/stack/1', icon: 'layers', color: 'text-blue-400' },
-                { name: 'Binary Search Tree', href: '/ide/bst/1', icon: 'account_tree', color: 'text-secondary' },
+                { name: 'Binary Search Tree', href: '/ide/classic/bst-insertion', icon: 'account_tree', color: 'text-secondary' },
                 { name: 'Red-Black Tree', href: '/ide/bst/2', icon: 'park', color: 'text-accent-mint' },
                 { name: 'AVL Tree', href: '/ide/bst/3', icon: 'nature', color: 'text-indigo-400' },
                 { name: 'Quantum Search', href: '/ide/quantum/grovers-search', icon: 'vibration', color: 'text-pink-400' },
-                { name: 'Stack Lab (Experiment)', href: '/ide/classic/stack-experiment', icon: 'biotech', color: 'text-primary' },
-                { name: 'BST Lab (Experiment)', href: '/ide/classic/bst-experiment', icon: 'science', color: 'text-secondary' },
               ].map((item) => (
                 <Link key={item.href} className="flex items-center gap-4 px-5 py-3 rounded-2xl text-text-secondary hover:bg-surface-dark hover:text-white transition-all group border-2 border-transparent hover:border-white/10" href={item.href}>
                   <span className={`material-symbols-outlined text-[22px] ${item.color} opacity-70 group-hover:opacity-100 transition-opacity`}>{item.icon}</span>
@@ -322,10 +320,10 @@ export default function DashboardClient({ user, snippets, stats, modules }: any)
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {[
-                    { name: 'Array Data Structure', desc: 'Contiguous memory, index access', href: '/ide/array/1', icon: 'view_column', color: 'amber-400' },
                     { name: 'Stack Data Structure', desc: 'LIFO logic', href: '/ide/stack/1', icon: 'layers', color: 'blue-400' },
-                    { name: 'BST Data Structure', desc: 'Hierarchical logic', href: '/ide/bst/1', icon: 'account_tree', color: 'secondary' },
+                    { name: 'Red-Black Tree', desc: 'Self-balancing logic', href: '/ide/bst/2', icon: 'park', color: 'accent-mint' },
                     { name: 'Complexity Lab', desc: 'Big O & Metrics', href: '/analysis', icon: 'query_stats', color: 'secondary' },
+                    { name: 'Evolution Path', desc: 'Classical to Quantum', href: '/learning-path', icon: 'timeline', color: 'pink-500' },
                   ].map((item, i) => (
                     <motion.div key={i} variants={itemVariants}>
                       <Link href={item.href} className="group flex items-center gap-4 p-4 bg-surface-darker border border-border-dark rounded-2xl hover:border-white/20 transition-all hover:bg-surface-dark">

@@ -8,7 +8,7 @@ export const CLASSIC_MENU = [
           {
             name: "Linear",
             items: [
-              { name: "Array", desc: "Contiguous memory, fixed/dynamic size", href: "/ide/array/1" },
+              { name: "Array", desc: "Contiguous memory, fixed/dynamic size", href: "/ide/linear?type=array" },
               { name: "Linked List", desc: "Singly, Doubly, Circular, Skip Lists", href: "/ide/linear?type=linked-list" },
               { name: "Stack", desc: "LIFO order, used in recursion", href: "/ide/stack/1" },
               { name: "Queue", desc: "FIFO order, Circular, Priority Queues", href: "/ide/linear?type=queue" }

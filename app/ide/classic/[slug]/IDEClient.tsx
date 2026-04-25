@@ -1,13 +1,10 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import dynamic from 'next/dynamic';
+import Editor from '@monaco-editor/react';
 import IDELayout from '@/components/ide/Layout';
+import VisualizerFactory from '@/components/visualizers/VisualizerFactory';
 import VisualizerControls from '@/components/ide/VisualizerControls';
-
-const Editor = dynamic(() => import('@monaco-editor/react'), { ssr: false, loading: () => <div className="flex items-center justify-center p-8 text-xs text-text-secondary animate-pulse">Loading Editor...</div> });
-const VisualizerFactory = dynamic(() => import('@/components/visualizers/VisualizerFactory'), { ssr: false, loading: () => <div className="flex items-center justify-center p-8 text-xs text-text-secondary animate-pulse">Loading 3D Visuals...</div> });
-
 import Timeline from '@/components/ide/Timeline';
 import MemoryMonitor from '@/components/ide/MemoryMonitor';
 import LectureCanvas from '@/components/ide/LectureCanvas';

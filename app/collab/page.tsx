@@ -344,7 +344,7 @@ export default function DsalCollaborativeReviewInterface() {
               </div>
               <div className="flex justify-between">
                 <span className="text-purple-400">distances</span>
-                <span className="text-accent-mint text-[10px]">{JSON.stringify({ A: 0, B: 5, C: 12, D: Infinity })}</span>
+                <span className="text-accent-mint">{"{ A: 0, B: 5, C: 12, D: ∞ }"}</span>
               </div>
             </div>
           </div>

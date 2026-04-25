@@ -136,7 +136,7 @@ export default function DsalAlgorithmIdeGraphVisualization() {
 
         return {
             ...e,
-            animated: isActiveEdge,
+            animated: !!isActiveEdge,
             style: { stroke, strokeWidth: isActiveEdge ? 4 : 2, transition: "stroke 0.3s ease" }
         };
     }));

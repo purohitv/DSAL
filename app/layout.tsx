@@ -10,6 +10,9 @@ const spaceGrotesk = Space_Grotesk({ subsets: ["latin"] });
 export const metadata: Metadata = {
     title: "DSAL - Data Structure and Algorithm Laboratory",
     description: "Next-Gen Algorithm Visualization & Research Gateway",
+    icons: {
+        icon: "/logo.png",
+    },
 };
 
 export default function RootLayout({

@@ -249,7 +249,7 @@ int main() {
                 fontSize: 10,
                 readOnly: true,
                 scrollBeyondLastLine: false,
-                lineNumbers: (num) => String(num + 10), // Offset to match original line numbers if needed
+                lineNumbers: (num: number) => String(num + 10), // Offset to match original line numbers if needed
                 glyphMargin: false,
                 folding: false,
                 lineDecorationsWidth: 0,

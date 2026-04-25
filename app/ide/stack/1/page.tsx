@@ -392,7 +392,7 @@ export default function StackVisualization() {
                 { name: 'Push', onClick: handlePush, icon: <Plus size={14} /> },
                 { name: 'Pop', onClick: handlePop, icon: <Minus size={14} /> },
                 { name: 'Peek', onClick: handlePeek, icon: <Eye size={14} /> },
-                { name: 'User Input', onClick: () => window.location.href = '/ide/classic/stack-experiment', icon: <Terminal size={14} /> },
+                { name: 'User Input', onClick: () => {}, icon: <Terminal size={14} /> },
                 { name: 'All', onClick: () => {}, icon: <Layers size={14} /> },
                 { name: 'Reset', onClick: handleReset, icon: <Square size={14} /> },
             ]}

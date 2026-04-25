@@ -51,7 +51,7 @@ export default function ClassicIDE() {
                 fontSize: 10,
                 readOnly: true,
                 scrollBeyondLastLine: false,
-                lineNumbers: (num) => String(num + 10),
+                lineNumbers: (num: number) => String(num + 10),
                 glyphMargin: false,
                 folding: false,
                 lineDecorationsWidth: 0,
